@@ -1,0 +1,294 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../api/ytmusic_api.dart';
+import '../audio/audio_handler.dart';
+import '../providers.dart';
+import 'player_screen.dart';
+
+class SearchScreen extends ConsumerStatefulWidget {
+  const SearchScreen({super.key});
+  @override
+  ConsumerState<SearchScreen> createState() => _State();
+}
+
+class _State extends ConsumerState<SearchScreen> {
+  final _ctrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _submit(String v) => setState(() => _query = v.trim());
+
+  void _tap(List<Song> songs, int i) {
+    ref.read(handlerProvider).play(songs, i);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const PlayerScreen()),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0B0B0D),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0B0B0D),
+        title: const Text(
+          'Simple Player',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: TextField(
+              controller: _ctrl,
+              onSubmitted: _submit,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(color: Colors.white),
+              cursorColor: Colors.white,
+              decoration: InputDecoration(
+                hintText: 'Search YouTube Music…',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: const Color(0xFF1C1C1E),
+                prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                suffixIcon: _ctrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54),
+                        onPressed: () {
+                          _ctrl.clear();
+                          _submit('');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _Results(query: _query, onTap: _tap),
+          ),
+          _MiniBar(),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+
+class _Results extends ConsumerWidget {
+  const _Results({required this.query, required this.onTap});
+  final String query;
+  final void Function(List<Song>, int) onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (query.isEmpty) {
+      return const Center(
+        child: Text(
+          'Search for a song above',
+          style: TextStyle(color: Colors.white38),
+        ),
+      );
+    }
+    final state = ref.watch(searchProvider(query));
+    return state.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white54)),
+      error: (e, _) => Center(
+        child: Text(
+          'Error: $e',
+          style: const TextStyle(color: Colors.redAccent),
+        ),
+      ),
+      data: (songs) {
+        if (songs.isEmpty)
+          return const Center(
+            child: Text('No results', style: TextStyle(color: Colors.white38)),
+          );
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 4),
+          itemCount: songs.length,
+          itemBuilder: (ctx, i) =>
+              _Tile(song: songs[i], onTap: () => onTap(songs, i)),
+        );
+      },
+    );
+  }
+}
+
+class _Tile extends StatelessWidget {
+  const _Tile({required this.song, required this.onTap});
+  final Song song;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: song.artwork != null
+            ? CachedNetworkImage(
+                imageUrl: song.artwork!,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => _ph,
+                errorWidget: (_, __, ___) => _ph,
+              )
+            : _ph,
+      ),
+      title: Text(
+        song.title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        song.artist.isEmpty ? 'Unknown artist' : song.artist,
+        style: const TextStyle(color: Colors.white54, fontSize: 13),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: song.durationSec != null
+          ? Text(
+              _fmt(Duration(seconds: song.durationSec!)),
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
+            )
+          : null,
+    );
+  }
+
+  static final _ph = Container(
+    width: 48,
+    height: 48,
+    color: const Color(0xFF2C2C2E),
+    child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
+  );
+
+  String _fmt(Duration d) {
+    final m = d.inMinutes.remainder(60).toString();
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:${m.padLeft(2, '0')}:$s' : '$m:$s';
+  }
+}
+
+// ── Mini Now-Playing bar ──────────────────────────────────────────────────────
+
+class _MiniBar extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final h = ref.watch(handlerProvider);
+    return ValueListenableBuilder<Song?>(
+      valueListenable: h.current,
+      builder: (_, song, __) {
+        if (song == null) return const SizedBox.shrink();
+        return GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PlayerScreen()),
+          ),
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1C1E),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: song.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: song.artwork!,
+                          width: 42,
+                          height: 42,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          width: 42,
+                          height: 42,
+                          color: const Color(0xFF2C2C2E),
+                          child: const Icon(
+                            Icons.music_note,
+                            color: Colors.white24,
+                            size: 18,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        song.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        song.artist.isEmpty ? 'Unknown' : song.artist,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: h.playing,
+                  builder: (_, playing, __) => IconButton(
+                    icon: Icon(
+                      playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 26,
+                    ),
+                    onPressed: playing ? h.pause : h.resume,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.skip_next_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  onPressed: h.next,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,42 @@
+name: simple_player
+description: "Simple search + stream app — same backend as sunoh."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Same HTTP client sunoh uses for InnerTube search
+  dio: ^5.9.2
+
+  # Same state management as sunoh
+  flutter_riverpod: ^3.3.1
+
+  # Same audio engine — libmpv, gapless, on_load hooks (same as sunoh)
+  mpv_audio_kit: ^0.2.1
+
+  # OS lockscreen / notification — requires MainActivity extends AudioServiceActivity
+  audio_service: ^0.18.18
+
+  # Audio focus + headphone-unplug events
+  audio_session: ^0.2.3
+
+  # HTML entity decoding in song titles
+  html_unescape: ^2.0.0
+
+  # Image caching for artwork
+  cached_network_image: ^3.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/po_token.html
