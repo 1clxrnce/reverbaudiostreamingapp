@@ -1,158 +1,30 @@
 # Reverb
 
-A Flutter music streaming app for Android that searches and streams music from YouTube Music — no account needed, no ads, no tracking.
+Reverb is a free audio streaming app for Android with a YouTube Music backend.
+
+No account. No ads. No subscriptions. Just search for any song and it plays.
 
 ---
 
-## What it does
+## Features
 
-- You type a song name into the search bar
-- It searches YouTube Music and shows you a list of results
-- You tap a song and it starts playing instantly
-- You get a full player screen with album art, seek bar, volume control, and skip buttons
-- A mini bar stays at the bottom of the search screen while music is playing so you never lose control
-
----
-
-## How it gets the music
-
-This is the part most people don't know about. YouTube Music has an internal API called **InnerTube**. It's the same API that the YouTube Music website uses in your browser — it's just not publicly documented.
-
-### Step 1 — Searching
-
-When you type something and hit search, the app sends a `POST` request directly to:
-
-```
-https://music.youtube.com/youtubei/v1/search
-```
-
-The request includes:
-- Your search query (e.g. `"drake")
-- A filter code that tells YouTube: **songs only**, not videos or playlists
-- A "context" block that makes the request look like it's coming from the real YouTube Music website
-
-YouTube responds with a big wall of JSON. The app digs through all the nested layers and pulls out just what it needs — song title, artist, artwork URL, duration, and most importantly the **video ID** (like `dQw4w9WgXcQ`).
-
-This whole step happens in Dart (Flutter) with no native code needed. YouTube doesn't protect the search endpoint with any extra security.
+- Search any song, artist, or track from YouTube Music's entire library
+- Instant streaming — no downloads, no waiting
+- Full player with album art, seek bar, and volume control
+- Mini now-playing bar so you never lose control while browsing
+- Auto-pauses when you unplug your headphones or get a phone call
+- High quality album artwork
 
 ---
 
-### Step 2 — Getting the stream URL (the hard part)
+## How it works
 
-Just having a video ID isn't enough to play a song. You need the actual audio stream URL — a direct link to the audio file on YouTube's servers.
-
-Here's the problem: **YouTube protects this with something called BotGuard.**
-
-BotGuard is YouTube's anti-bot system. To get a stream URL, you need to generate a special security token called a **PO Token** (Proof of Origin Token). YouTube only gives you a valid token if you're running inside a real browser — it checks things that a normal HTTP request can't fake.
-
-Dart can't do this on its own. So the app uses a trick:
-
-#### The WebView trick
-
-On Android, the app runs a hidden **WebView** (basically an invisible mini browser) in the background using Kotlin (the Android native language). The WebView loads a special HTML page that runs JavaScript to generate the PO Token the same way a real browser would.
-
-Once the token is generated, Kotlin uses it to call YouTube's player endpoint and get back the real audio stream URL — a direct `googlevideo.com` link that mpv can actually open and play.
-
-#### Pre-warming
-
-Loading a WebView takes 2-5 seconds the first time. So the app starts warming it up the moment you open it, before you even search for anything. By the time you tap your first song, the WebView is already ready and the stream resolves in about 1 second instead of 5.
+Reverb pulls music directly from YouTube Music's backend. When you search for a song, it queries YouTube Music and streams the audio straight to your device — no middleman, no server, no cost. Everything runs on your phone.
 
 ---
 
-### Step 3 — The placeholder trick (how search results queue instantly)
+## Built with
 
-When you tap a song from the search results, the app doesn't wait for the stream URL before starting playback. Instead it does something clever:
-
-1. It gives the audio player a **fake placeholder URL** like `sunoh-song://dQw4w9WgXcQ` for every song in the list
-2. The audio player (mpv) tries to open that URL
-3. **Before** mpv actually opens it, it fires a "hook" — basically it pauses and says "hey, I'm about to open this, do you want to do anything first?"
-4. The app intercepts that hook, calls the Kotlin/WebView side to resolve the real URL, and **swaps out** the fake URL for the real one
-5. mpv continues and plays the real stream
-
-This means the whole queue loads instantly with zero delay. mpv only resolves a song's real URL when it's actually about to play it.
-
----
-
-## How it streams
-
-The audio player underneath everything is **mpv** — the same open source player used in desktop apps like VLC. It's powerful, supports gapless playback between songs, and can handle the kind of HTTP streams YouTube uses.
-
-Once mpv has the real `googlevideo.com` URL, it also needs to send the right **HTTP headers** with its request — things like a User-Agent that matches what YouTube signed the URL for. The app sets these headers on mpv right before playback starts, so YouTube's CDN accepts the request.
-
-The stream is a direct audio-only file (not video) so it's efficient on data and battery.
-
----
-
-## File structure explained
-
-```
-lib/
-├── main.dart                  — App entry point, sets up dark theme, starts pre-warm
-├── providers.dart             — Shared app-wide objects (HTTP client, search API, audio player)
-│
-├── api/
-│   ├── ytmusic_api.dart       — Sends search requests to YouTube Music's InnerTube API
-│   ├── ytmusic_renderers.dart — Parses YouTube's messy JSON response into clean Song objects
-│   └── ytmusic_channel.dart   — Dart side of the bridge to Kotlin (sends/receives stream URLs)
-│
-├── audio/
-│   └── audio_handler.dart     — Controls mpv: play, pause, skip, seek, volume, hook interception
-│
-└── screens/
-    ├── search_screen.dart     — Main screen: search bar, results list, mini now-playing bar
-    └── player_screen.dart     — Full player: artwork, seek bar, controls, volume slider
-```
-
----
-
-## The full flow from tap to sound
-
-```
-You tap a song
-       ↓
-audio_handler.play() queues all songs with fake sunoh-song:// URLs
-       ↓
-mpv tries to open sunoh-song://dQw4w9WgXcQ
-       ↓
-mpv fires its on_load hook and pauses
-       ↓
-audio_handler intercepts the hook, reads the video ID
-       ↓
-YtMusicChannel.resolve() sends the video ID to Kotlin
-       ↓
-Kotlin uses the hidden WebView to generate a PO Token
-       ↓
-Kotlin calls YouTube's player API with the token
-       ↓
-YouTube returns a real googlevideo.com stream URL
-       ↓
-Kotlin sends the URL back to Dart
-       ↓
-audio_handler swaps the fake URL for the real one
-       ↓
-audio_handler sets the required HTTP headers on mpv
-       ↓
-mpv continues and starts streaming the audio
-       ↓
-You hear the song
-```
-
----
-
-## Why it works without an account
-
-The search endpoint doesn't require login. The stream resolution uses BotGuard tokens generated by the WebView — the same way an anonymous browser session would work. No Google account, no API key, nothing to sign up for.
-
----
-
-## Tech stack
-
-| Thing | What it is |
-|---|---|
-| Flutter | The UI framework — one codebase runs on Android |
-| Riverpod | State management — shares data between screens |
-| Dio | HTTP client — makes the search requests |
-| mpv (via mpv_audio_kit) | The actual audio player engine |
-| audio_session | Handles headphone unplug and phone call interruptions |
-| cached_network_image | Downloads and caches album artwork |
-| Kotlin + WebView | Generates PO tokens and resolves stream URLs natively |
+- Flutter
+- YouTube Music (InnerTube API)
+- mpv audio engine
