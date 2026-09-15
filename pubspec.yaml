@@ -1,4 +1,4 @@
-name: simple_player
+name: reverb
 description: "Simple search + stream app — same backend as sunoh."
 publish_to: 'none'
 version: 1.0.0+1

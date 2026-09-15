@@ -20,10 +20,10 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mpv_audio_kit/mpv_audio_kit.dart';
 
-import '../api/ytmusic_api.dart'; // Song
-import '../api/ytmusic_channel.dart'; // YtMusicChannel
+import '../api/ytmusic_api.dart';
+import '../api/ytmusic_channel.dart';
 
-const _kScheme = 'sunoh-song://'; // same placeholder scheme as sunoh
+const _kScheme = 'sunoh-song://';
 
 class AudioHandler {
   AudioHandler() {
@@ -44,14 +44,14 @@ class AudioHandler {
   final _position = ValueNotifier<Duration>(Duration.zero);
   final _duration = ValueNotifier<Duration>(Duration.zero);
   final _queue = ValueNotifier<List<Song>>(const []);
+  final _volume = ValueNotifier<double>(100.0);
 
   ValueListenable<Song?> get current => _current;
   ValueListenable<bool> get playing => _playing;
   ValueListenable<Duration> get position => _position;
   ValueListenable<Duration> get duration => _duration;
   ValueListenable<List<Song>> get queue => _queue;
-
-  // ── Player setup ──────────────────────────────────────────────────────
+  ValueListenable<double> get volume => _volume;
 
   Player _buildPlayer() {
     final p = Player(
@@ -61,17 +61,10 @@ class AudioHandler {
         logLevel: LogLevel.info,
       ),
     );
-    // Register the on_load hook — same as sunoh
+
     p.registerHook(Hook.load, timeout: const Duration(seconds: 10));
     return p;
   }
-
-  // ── on_load hook — the core of the streaming chain ───────────────────
-  //
-  // When mpv tries to open a sunoh-song:// URI it pauses and fires this.
-  // We resolve the real URL natively and hand it back before mpv proceeds.
-  // This is the EXACT same logic as sunoh's _onHook / _identifyLoadingSong /
-  // _applyResolvedUrl / _applyResolvedHeaders.
 
   Future<void> _onHook(MpvHookEvent event) async {
     if (event.hook != Hook.load) {
@@ -92,33 +85,23 @@ class AudioHandler {
 
       debugPrint('[audio] resolving ${song.id} "${song.title}"');
 
-      // 2. Resolve via the native MethodChannel → YtMusicBridge.kt
       final yt = await YtMusicChannel.instance.resolve(song.id);
       if (yt == null) {
         debugPrint('[audio] resolve returned null for ${song.id}');
         return;
       }
 
-      // 3. Inject HTTP headers BEFORE changing the URL.
-      //    YouTube CDN validates the User-Agent against the signing client.
-      //    http-header-fields is global to the player, so always write it
-      //    (including empty) to prevent a previous track's headers leaking.
       await _applyHeaders(yt.headers);
 
-      // 4. Swap the placeholder for the real URL
       await _player.setRawProperty('stream-open-filename', yt.url);
       debugPrint('[audio] resolved → ${yt.url.substring(0, 60)}…');
     } catch (e, st) {
       debugPrint('[audio] hook error: $e\n$st');
     } finally {
-      // Always release the hook so mpv doesn't stall
       _player.continueHook(event.id);
     }
   }
 
-  /// Write per-request headers to mpv's global http-header-fields property.
-  /// Format: "Key: Value,Key2: Value2"  (comma-separated, no commas in values).
-  /// Same logic as sunoh's _applyResolvedHeaders.
   Future<void> _applyHeaders(Map<String, String>? headers) async {
     final value = (headers == null || headers.isEmpty)
         ? ''
@@ -133,8 +116,6 @@ class AudioHandler {
     }
   }
 
-  // ── Queue sync ────────────────────────────────────────────────────────
-
   void _syncQueue(Playlist pl) {
     final songs = pl.items
         .map((m) => _byId[_idFromUri(m.uri)])
@@ -145,13 +126,13 @@ class AudioHandler {
     if (idx >= 0 && idx < songs.length) _current.value = songs[idx];
   }
 
-  // ── Public surface ────────────────────────────────────────────────────
-
   /// Start playing [songs] from [startIndex].
   /// Each song is queued as a placeholder — the on_load hook resolves it.
   Future<void> play(List<Song> songs, int startIndex) async {
     if (songs.isEmpty) return;
-    for (final s in songs) _byId[s.id] = s;
+    for (final s in songs) {
+      _byId[s.id] = s;
+    }
     _current.value = songs[startIndex.clamp(0, songs.length - 1)];
     await _player.openAll(
       songs.map((s) => Media(s.placeholderUri)).toList(),
@@ -166,6 +147,12 @@ class AudioHandler {
   Future<void> previous() => _player.previous();
   Future<void> seek(Duration pos) => _player.seek(pos);
 
+  Future<void> setVolume(double vol) async {
+    final clamped = vol.clamp(0.0, 100.0);
+    _volume.value = clamped;
+    await _player.setVolume(clamped);
+  }
+
   // ── Audio session ─────────────────────────────────────────────────────
 
   Future<void> _initSession() async {
@@ -173,9 +160,9 @@ class AudioHandler {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
       session.interruptionEventStream.listen((e) {
-        if (e.begin)
+        if (e.begin) {
           _player.pause();
-        else if (e.type != AudioInterruptionType.unknown)
+        } else if (e.type != AudioInterruptionType.unknown)
           _player.play();
       });
       session.becomingNoisyEventStream.listen((_) => _player.pause());
@@ -199,5 +186,6 @@ class AudioHandler {
     _position.dispose();
     _duration.dispose();
     _queue.dispose();
+    _volume.dispose();
   }
 }

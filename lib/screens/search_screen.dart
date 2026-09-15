@@ -40,7 +40,7 @@ class _State extends ConsumerState<SearchScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0B0D),
         title: const Text(
-          'Simple Player',
+          'Reverb',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         bottom: PreferredSize(
@@ -54,7 +54,7 @@ class _State extends ConsumerState<SearchScreen> {
               style: const TextStyle(color: Colors.white),
               cursorColor: Colors.white,
               decoration: InputDecoration(
-                hintText: 'Search YouTube Music…',
+                hintText: 'What do you want to listen to?',
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
                 fillColor: const Color(0xFF1C1C1E),
@@ -117,10 +117,11 @@ class _Results extends ConsumerWidget {
         ),
       ),
       data: (songs) {
-        if (songs.isEmpty)
+        if (songs.isEmpty) {
           return const Center(
             child: Text('No results', style: TextStyle(color: Colors.white38)),
           );
+        }
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 4),
           itemCount: songs.length,
@@ -150,8 +151,8 @@ class _Tile extends StatelessWidget {
                 width: 48,
                 height: 48,
                 fit: BoxFit.cover,
-                placeholder: (_, __) => _ph,
-                errorWidget: (_, __, ___) => _ph,
+                placeholder: (_, _) => _ph,
+                errorWidget: (_, _, _) => _ph,
               )
             : _ph,
       ),
@@ -201,7 +202,7 @@ class _MiniBar extends ConsumerWidget {
     final h = ref.watch(handlerProvider);
     return ValueListenableBuilder<Song?>(
       valueListenable: h.current,
-      builder: (_, song, __) {
+      builder: (_, song, _) {
         if (song == null) return const SizedBox.shrink();
         return GestureDetector(
           onTap: () => Navigator.push(
@@ -267,7 +268,7 @@ class _MiniBar extends ConsumerWidget {
                 ),
                 ValueListenableBuilder<bool>(
                   valueListenable: h.playing,
-                  builder: (_, playing, __) => IconButton(
+                  builder: (_, playing, _) => IconButton(
                     icon: Icon(
                       playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: Colors.white,
