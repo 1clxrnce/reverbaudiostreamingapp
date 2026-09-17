@@ -1,14 +1,34 @@
+// search_screen.dart
+// Main screen: search bar, results list, mini now-playing bar.
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/ytmusic_api.dart';
-import '../audio/audio_handler.dart';
 import '../providers.dart';
 import 'player_screen.dart';
 
+// ── Navigation helper ─────────────────────────────────────────────────────────
+
+// Slide-up transition used everywhere we open the player.
+Route<void> _playerRoute() => PageRouteBuilder<void>(
+  pageBuilder: (_, _a, _b) => const PlayerScreen(),
+  transitionsBuilder: (_, animation, _c, child) {
+    final tween = Tween(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).chain(CurveTween(curve: Curves.easeOutCubic));
+    return SlideTransition(position: animation.drive(tween), child: child);
+  },
+  transitionDuration: const Duration(milliseconds: 380),
+);
+
+// ── SearchScreen ──────────────────────────────────────────────────────────────
+
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
+
   @override
   ConsumerState<SearchScreen> createState() => _State();
 }
@@ -16,6 +36,14 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _State extends ConsumerState<SearchScreen> {
   final _ctrl = TextEditingController();
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild whenever the text changes so the X button appears/disappears
+    // reactively on every keystroke — not only after a submit.
+    _ctrl.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -27,10 +55,7 @@ class _State extends ConsumerState<SearchScreen> {
 
   void _tap(List<Song> songs, int i) {
     ref.read(handlerProvider).play(songs, i);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PlayerScreen()),
-    );
+    Navigator.push(context, _playerRoute());
   }
 
   @override
@@ -39,9 +64,11 @@ class _State extends ConsumerState<SearchScreen> {
       backgroundColor: const Color(0xFF0B0B0D),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0B0D),
-        title: const Text(
-          'Reverb',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        toolbarHeight: 80, // Taller AppBar to accommodate bigger logo
+        title: Image.asset(
+          'assets/logo 12 black and white.png',
+          height: 56,
+          fit: BoxFit.contain,
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
@@ -59,6 +86,8 @@ class _State extends ConsumerState<SearchScreen> {
                 filled: true,
                 fillColor: const Color(0xFF1C1C1E),
                 prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                // X button is now driven by the _ctrl listener above —
+                // appears/disappears on every keystroke, not only after submit.
                 suffixIcon: _ctrl.text.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.close, color: Colors.white54),
@@ -106,6 +135,7 @@ class _Results extends ConsumerWidget {
         ),
       );
     }
+
     final state = ref.watch(searchProvider(query));
     return state.when(
       loading: () =>
@@ -133,6 +163,8 @@ class _Results extends ConsumerWidget {
   }
 }
 
+// ── Song tile ─────────────────────────────────────────────────────────────────
+
 class _Tile extends StatelessWidget {
   const _Tile({required this.song, required this.onTap});
   final Song song;
@@ -145,16 +177,20 @@ class _Tile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(6),
-        child: song.artwork != null
-            ? CachedNetworkImage(
-                imageUrl: song.artwork!,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                placeholder: (_, _) => _ph,
-                errorWidget: (_, _, _) => _ph,
-              )
-            : _ph,
+        // Hero tag matches the one in PlayerScreen so artwork morphs on open.
+        child: Hero(
+          tag: 'artwork-${song.id}',
+          child: song.artwork != null
+              ? CachedNetworkImage(
+                  imageUrl: song.artwork!,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) => _ph,
+                  errorWidget: (_, _, _) => _ph,
+                )
+              : _ph,
+        ),
       ),
       title: Text(
         song.title,
@@ -194,98 +230,144 @@ class _Tile extends StatelessWidget {
   }
 }
 
-// ── Mini Now-Playing bar ──────────────────────────────────────────────────────
+// ── Mini now-playing bar ──────────────────────────────────────────────────────
 
 class _MiniBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final h = ref.watch(handlerProvider);
+
     return ValueListenableBuilder<Song?>(
       valueListenable: h.current,
       builder: (_, song, _) {
         if (song == null) return const SizedBox.shrink();
+
         return GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const PlayerScreen()),
-          ),
+          onTap: () => Navigator.push(context, _playerRoute()),
           child: Container(
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: const Color(0xFF1C1C1E),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: song.artwork != null
-                      ? CachedNetworkImage(
-                          imageUrl: song.artwork!,
-                          width: 42,
-                          height: 42,
-                          fit: BoxFit.cover,
-                        )
-                      : Container(
-                          width: 42,
-                          height: 42,
-                          color: const Color(0xFF2C2C2E),
-                          child: const Icon(
-                            Icons.music_note,
-                            color: Colors.white24,
-                            size: 18,
+            // ClipRRect so the progress strip respects the rounded corners.
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Main row: artwork | title+artist | controls ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        // Artwork — Hero tag matches the current song so it
+                        // morphs into the full artwork on the player screen.
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Hero(
+                            tag: 'artwork-${song.id}',
+                            child: song.artwork != null
+                                ? CachedNetworkImage(
+                                    imageUrl: song.artwork!,
+                                    width: 42,
+                                    height: 42,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Container(
+                                    width: 42,
+                                    height: 42,
+                                    color: const Color(0xFF2C2C2E),
+                                    child: const Icon(
+                                      Icons.music_note,
+                                      color: Colors.white24,
+                                      size: 18,
+                                    ),
+                                  ),
                           ),
                         ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        song.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                song.title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                song.artist.isEmpty ? 'Unknown' : song.artist,
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        song.artist.isEmpty ? 'Unknown' : song.artist,
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
+                        ValueListenableBuilder<bool>(
+                          valueListenable: h.playing,
+                          builder: (_, playing, _) => IconButton(
+                            icon: Icon(
+                              playing
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                            onPressed: playing ? h.pause : h.resume,
+                          ),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                ValueListenableBuilder<bool>(
-                  valueListenable: h.playing,
-                  builder: (_, playing, _) => IconButton(
-                    icon: Icon(
-                      playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: Colors.white,
-                      size: 26,
+                        IconButton(
+                          icon: const Icon(
+                            Icons.skip_next_rounded,
+                            color: Colors.white,
+                            size: 26,
+                          ),
+                          onPressed: h.next,
+                        ),
+                      ],
                     ),
-                    onPressed: playing ? h.pause : h.resume,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.skip_next_rounded,
-                    color: Colors.white,
-                    size: 26,
+
+                  // ── Seek progress strip ──
+                  // A thin 3 px bar that fills left-to-right as the song plays.
+                  ValueListenableBuilder<Duration>(
+                    valueListenable: h.position,
+                    builder: (_, pos, _) => ValueListenableBuilder<Duration>(
+                      valueListenable: h.duration,
+                      builder: (_, dur, _) {
+                        final progress = dur.inMilliseconds > 0
+                            ? (pos.inMilliseconds / dur.inMilliseconds).clamp(
+                                0.0,
+                                1.0,
+                              )
+                            : 0.0;
+                        return LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 3,
+                          backgroundColor: Colors.white12,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.white54,
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                  onPressed: h.next,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

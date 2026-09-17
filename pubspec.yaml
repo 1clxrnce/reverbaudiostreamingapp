@@ -39,4 +39,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/po_token.html
+    - assets/logo 12 black and white.png

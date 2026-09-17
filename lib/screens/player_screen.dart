@@ -1,3 +1,6 @@
+// player_screen.dart
+// Full-screen music player — artwork, title, seek bar, controls, volume.
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,11 +15,13 @@ class PlayerScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final h = ref.watch(handlerProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0D),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: 72, // Taller AppBar for bigger logo
         leading: IconButton(
           icon: const Icon(
             Icons.keyboard_arrow_down,
@@ -25,13 +30,10 @@ class PlayerScreen extends ConsumerWidget {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Now Playing',
-          style: TextStyle(
-            color: Colors.white54,
-            fontSize: 13,
-            letterSpacing: 0.5,
-          ),
+        title: Image.asset(
+          'assets/logo 12 black and white.png',
+          height: 48,
+          fit: BoxFit.contain,
         ),
         centerTitle: true,
       ),
@@ -57,25 +59,49 @@ class _Body extends StatelessWidget {
           children: [
             const Spacer(flex: 2),
 
-            // ── Artwork ───────────────────────────────────────────────
-            AspectRatio(
-              aspectRatio: 1,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: song?.artwork != null
-                    ? CachedNetworkImage(
-                        imageUrl: song!.artwork!,
-                        fit: BoxFit.cover,
-                        placeholder: (_, _) => _artPh,
-                        errorWidget: (_, _, _) => _artPh,
-                      )
-                    : _artPh,
+            // ── Album artwork with Hero + drop shadow ──────────────────
+            // Hero tag matches search_screen so artwork morphs on open.
+            Hero(
+              tag: song != null ? 'artwork-${song.id}' : 'artwork-none',
+              child: AspectRatio(
+                aspectRatio: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    // Layered shadows: a wide soft glow + a tighter darker one.
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x55000000),
+                        blurRadius: 40,
+                        spreadRadius: 8,
+                        offset: Offset(0, 16),
+                      ),
+                      BoxShadow(
+                        color: Color(0x33000000),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: song?.artwork != null
+                        ? CachedNetworkImage(
+                            imageUrl: song!.artwork!,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => _artPh,
+                            errorWidget: (_, _, _) => _artPh,
+                          )
+                        : _artPh,
+                  ),
+                ),
               ),
             ),
 
             const Spacer(flex: 1),
 
-            // ── Title / artist ────────────────────────────────────────
+            // ── Song title and artist ──────────────────────────────────
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -103,20 +129,11 @@ class _Body extends StatelessWidget {
             ),
 
             const SizedBox(height: 28),
-
-            // ── Seek bar ──────────────────────────────────────────────
             _SeekBar(h: h),
-
             const SizedBox(height: 28),
-
-            // ── Transport controls ────────────────────────────────────
             _Controls(h: h),
-
             const SizedBox(height: 32),
-
-            // ── Volume slider ─────────────────────────────────────────
             _VolumeBar(h: h),
-
             const Spacer(flex: 2),
           ],
         ),
@@ -153,6 +170,7 @@ class _SeekBar extends StatelessWidget {
           final val = max > 0
               ? pos.inMilliseconds.toDouble().clamp(0.0, max)
               : 0.0;
+
           return Column(
             children: [
               SliderTheme(
@@ -222,7 +240,6 @@ class _Controls extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Previous
           IconButton(
             icon: const Icon(Icons.skip_previous_rounded),
             color: Colors.white,
@@ -230,25 +247,10 @@ class _Controls extends StatelessWidget {
             onPressed: h.previous,
           ),
 
-          // Play / pause — big white circle
-          GestureDetector(
-            onTap: playing ? h.pause : h.resume,
-            child: Container(
-              width: 68,
-              height: 68,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                color: Colors.black,
-                size: 36,
-              ),
-            ),
-          ),
+          // ── Animated play/pause button ──
+          // _PlayButton handles the scale animation internally.
+          _PlayButton(playing: playing, onTap: playing ? h.pause : h.resume),
 
-          // Next
           IconButton(
             icon: const Icon(Icons.skip_next_rounded),
             color: Colors.white,
@@ -256,6 +258,72 @@ class _Controls extends StatelessWidget {
             onPressed: h.next,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Animated play/pause circle — scales down briefly on each tap for tactile feel.
+class _PlayButton extends StatefulWidget {
+  const _PlayButton({required this.playing, required this.onTap});
+  final bool playing;
+  final VoidCallback onTap;
+
+  @override
+  State<_PlayButton> createState() => _PlayButtonState();
+}
+
+class _PlayButtonState extends State<_PlayButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 150),
+    );
+    // Scales from 1.0 down to 0.88 on press, then springs back.
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.88,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleTap() async {
+    await _ctrl.forward();
+    widget.onTap();
+    await _ctrl.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            widget.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            color: Colors.black,
+            size: 36,
+          ),
+        ),
       ),
     );
   }
