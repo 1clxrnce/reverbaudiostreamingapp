@@ -65,10 +65,10 @@ class _State extends ConsumerState<SearchScreen> {
       backgroundColor: const Color(0xFF0B0B0D),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0B0D),
-        toolbarHeight: 80, // Taller AppBar to accommodate bigger logo
+        toolbarHeight: 100, // Even taller AppBar for bigger logo
         title: Image.asset(
           'assets/logo 12 black and white.png',
-          height: 56,
+          height: 72,
           fit: BoxFit.contain,
         ),
         actions: [

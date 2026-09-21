@@ -20,10 +20,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0B0B0D),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0B0D),
-        title: Text(
-          playlist.name,
-          style: const TextStyle(color: Colors.white),
-        ),
+        title: Text(playlist.name, style: const TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -67,34 +64,50 @@ class PlaylistDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: playlist.songs.isEmpty
-          ? _EmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: playlist.songs.length,
-              itemBuilder: (ctx, i) => _SongTile(
-                song: playlist.songs[i],
-                onTap: () {
-                  ref.read(handlerProvider).play(playlist.songs, i);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PlayerScreen(),
+      body: Column(
+        children: [
+          // Playlist header with artwork
+          if (playlist.songs.isNotEmpty) _PlaylistHeader(playlist: playlist),
+
+          // Song list
+          Expanded(
+            child: playlist.songs.isEmpty
+                ? _EmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                  );
-                },
-                onRemove: () async {
-                  final user = authState.value;
-                  if (user != null) {
-                    await ref.read(firestoreServiceProvider).removeSongFromPlaylist(
-                          user.uid,
-                          playlist.id,
-                          playlist.songs[i],
+                    itemCount: playlist.songs.length,
+                    itemBuilder: (ctx, i) => _SongTile(
+                      song: playlist.songs[i],
+                      index: i + 1,
+                      onTap: () {
+                        ref.read(handlerProvider).play(playlist.songs, i);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const PlayerScreen(),
+                          ),
                         );
-                  }
-                },
-              ),
-            ),
+                      },
+                      onRemove: () async {
+                        final user = authState.value;
+                        if (user != null) {
+                          await ref
+                              .read(firestoreServiceProvider)
+                              .removeSongFromPlaylist(
+                                user.uid,
+                                playlist.id,
+                                playlist.songs[i],
+                              );
+                        }
+                      },
+                    ),
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: playlist.songs.isNotEmpty
           ? FloatingActionButton(
               onPressed: () {
@@ -113,7 +126,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
 
   void _showRenameDialog(BuildContext context, WidgetRef ref, String userId) {
     final controller = TextEditingController(text: playlist.name);
-    
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -211,6 +224,77 @@ class PlaylistDetailScreen extends ConsumerWidget {
   }
 }
 
+// ── Playlist Header ────────────────────────────────────────────────────────
+
+class _PlaylistHeader extends StatelessWidget {
+  const _PlaylistHeader({required this.playlist});
+  final Playlist playlist;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstArtwork = playlist.songs.first.artwork;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          // Large artwork
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2E),
+              borderRadius: BorderRadius.circular(12),
+              image: firstArtwork != null
+                  ? DecorationImage(
+                      image: NetworkImage(firstArtwork),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: firstArtwork == null
+                ? const Icon(Icons.queue_music, size: 48, color: Colors.white24)
+                : null,
+          ),
+
+          const SizedBox(width: 20),
+
+          // Playlist info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  playlist.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Empty State ────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
@@ -222,11 +306,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.music_note,
-              size: 80,
-              color: Colors.white24,
-            ),
+            Icon(Icons.music_note, size: 80, color: Colors.white24),
             SizedBox(height: 24),
             Text(
               'No songs yet',
@@ -239,10 +319,7 @@ class _EmptyState extends StatelessWidget {
             SizedBox(height: 8),
             Text(
               'Search for songs and add them to this playlist',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],
@@ -271,9 +348,7 @@ class _SongTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: const Color(0xFF1C1C1E),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: ClipRRect(

@@ -39,22 +39,28 @@ class PlaylistsScreen extends ConsumerWidget {
             data: (playlists) {
               if (playlists.isEmpty) {
                 return _EmptyState(
-                  onCreatePlaylist: () => _showCreatePlaylistDialog(context, ref),
+                  onCreatePlaylist: () =>
+                      _showCreatePlaylistDialog(context, ref),
                 );
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
+              return GridView.builder(
+                padding: const EdgeInsets.all(20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.85,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
                 itemCount: playlists.length,
-                itemBuilder: (ctx, i) => _PlaylistTile(
+                itemBuilder: (ctx, i) => _PlaylistCard(
                   playlist: playlists[i],
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PlaylistDetailScreen(
-                          playlist: playlists[i],
-                        ),
+                        builder: (_) =>
+                            PlaylistDetailScreen(playlist: playlists[i]),
                       ),
                     );
                   },
@@ -93,10 +99,7 @@ class PlaylistsScreen extends ConsumerWidget {
   }
 
   void _showCreatePlaylistDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (ctx) => _CreatePlaylistDialog(),
-    );
+    showDialog(context: context, builder: (ctx) => _CreatePlaylistDialog());
   }
 }
 
@@ -111,11 +114,7 @@ class _SignInPrompt extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.library_music,
-              size: 80,
-              color: Colors.white24,
-            ),
+            const Icon(Icons.library_music, size: 80, color: Colors.white24),
             const SizedBox(height: 24),
             const Text(
               'Sign in to create playlists',
@@ -129,10 +128,7 @@ class _SignInPrompt extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Your playlists will sync across all your devices',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -143,8 +139,10 @@ class _SignInPrompt extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -175,11 +173,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.queue_music,
-              size: 80,
-              color: Colors.white24,
-            ),
+            const Icon(Icons.queue_music, size: 80, color: Colors.white24),
             const SizedBox(height: 24),
             const Text(
               'No playlists yet',
@@ -192,10 +186,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Create your first playlist to get started',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -206,8 +197,10 @@ class _EmptyState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -220,13 +213,101 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Playlist Tile ──────────────────────────────────────────────────────────
+// ── Playlist Card ──────────────────────────────────────────────────────────
+
+class _PlaylistCard extends StatelessWidget {
+  const _PlaylistCard({required this.playlist, required this.onTap});
+
+  final Playlist playlist;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Get first song artwork if available
+    final firstArtwork =
+        playlist.songs.isNotEmpty && playlist.songs.first.artwork != null
+        ? playlist.songs.first.artwork
+        : null;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Artwork or placeholder
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C2C2E),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  image: firstArtwork != null
+                      ? DecorationImage(
+                          image: NetworkImage(firstArtwork),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: firstArtwork == null
+                    ? const Center(
+                        child: Icon(
+                          Icons.queue_music,
+                          size: 64,
+                          color: Colors.white24,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+
+            // Info section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    playlist.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
+                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Old Playlist Tile (kept for reference, no longer used) ─────────────────
 
 class _PlaylistTile extends StatelessWidget {
-  const _PlaylistTile({
-    required this.playlist,
-    required this.onTap,
-  });
+  const _PlaylistTile({required this.playlist, required this.onTap});
 
   final Playlist playlist;
   final VoidCallback onTap;
@@ -237,9 +318,7 @@ class _PlaylistTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: const Color(0xFF1C1C1E),
         contentPadding: const EdgeInsets.all(12),
         leading: Container(
@@ -249,11 +328,7 @@ class _PlaylistTile extends StatelessWidget {
             color: const Color(0xFF2C2C2E),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(
-            Icons.queue_music,
-            color: Colors.white54,
-            size: 28,
-          ),
+          child: const Icon(Icons.queue_music, color: Colors.white54, size: 28),
         ),
         title: Text(
           playlist.name,
@@ -269,10 +344,7 @@ class _PlaylistTile extends StatelessWidget {
           '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
           style: const TextStyle(color: Colors.white54, fontSize: 14),
         ),
-        trailing: const Icon(
-          Icons.chevron_right,
-          color: Colors.white54,
-        ),
+        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
       ),
     );
   }
@@ -305,9 +377,7 @@ class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
     try {
       final user = ref.read(authStateProvider).value;
       if (user != null) {
-        await ref
-            .read(firestoreServiceProvider)
-            .createPlaylist(user.uid, name);
+        await ref.read(firestoreServiceProvider).createPlaylist(user.uid, name);
       }
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -329,10 +399,7 @@ class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
     return AlertDialog(
       backgroundColor: const Color(0xFF1C1C1E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
-        'New Playlist',
-        style: TextStyle(color: Colors.white),
-      ),
+      title: const Text('New Playlist', style: TextStyle(color: Colors.white)),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -352,10 +419,7 @@ class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: Colors.white54),
-          ),
+          child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _create,

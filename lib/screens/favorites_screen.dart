@@ -41,18 +41,22 @@ class FavoritesScreen extends ConsumerWidget {
                 return _EmptyState();
               }
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
+              return GridView.builder(
+                padding: const EdgeInsets.all(20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.75,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
                 itemCount: favorites.length,
-                itemBuilder: (ctx, i) => _SongTile(
+                itemBuilder: (ctx, i) => _FavoriteCard(
                   song: favorites[i],
                   onTap: () {
                     ref.read(handlerProvider).play(favorites, i);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => const PlayerScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const PlayerScreen()),
                     );
                   },
                   onRemove: () async {
@@ -84,7 +88,8 @@ class FavoritesScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: authState.value != null &&
+      floatingActionButton:
+          authState.value != null &&
               favoritesAsync.value != null &&
               favoritesAsync.value!.isNotEmpty
           ? FloatingActionButton(
@@ -114,11 +119,7 @@ class _SignInPrompt extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.favorite_border,
-              size: 80,
-              color: Colors.white24,
-            ),
+            const Icon(Icons.favorite_border, size: 80, color: Colors.white24),
             const SizedBox(height: 24),
             const Text(
               'Sign in to save favorites',
@@ -132,10 +133,7 @@ class _SignInPrompt extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Your favorites will sync across all your devices',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -146,8 +144,10 @@ class _SignInPrompt extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -175,11 +175,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.favorite_border,
-              size: 80,
-              color: Colors.white24,
-            ),
+            Icon(Icons.favorite_border, size: 80, color: Colors.white24),
             SizedBox(height: 24),
             Text(
               'No favorites yet',
@@ -192,10 +188,7 @@ class _EmptyState extends StatelessWidget {
             SizedBox(height: 8),
             Text(
               'Tap the heart icon on any song to save it here',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
           ],
@@ -205,7 +198,123 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ── Song Tile ──────────────────────────────────────────────────────────────
+// ── Favorite Card ──────────────────────────────────────────────────────────
+
+class _FavoriteCard extends StatelessWidget {
+  const _FavoriteCard({
+    required this.song,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final Song song;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1C1E),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Artwork
+            Expanded(
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2E),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      image: song.artwork != null
+                          ? DecorationImage(
+                              image: NetworkImage(song.artwork!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: song.artwork == null
+                        ? const Center(
+                            child: Icon(
+                              Icons.music_note,
+                              size: 64,
+                              color: Colors.white24,
+                            ),
+                          )
+                        : null,
+                  ),
+                  // Heart icon overlay
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: onRemove,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.redAccent,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Info section
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    song.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Old Song Tile (kept for reference, no longer used) ─────────────────────
 
 class _SongTile extends StatelessWidget {
   const _SongTile({
@@ -224,9 +333,7 @@ class _SongTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: const Color(0xFF1C1C1E),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: ClipRRect(
