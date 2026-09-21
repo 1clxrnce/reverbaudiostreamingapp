@@ -69,6 +69,24 @@ class Song {
   // mpv tries to open this, fires a hook, and we swap it for the real URL
   String get placeholderUri => 'sunoh-song://$id';
 
+  // Convert Song to Map for Firestore storage
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'artist': artist,
+    'artwork': artwork,
+    'durationSec': durationSec,
+  };
+
+  // Create Song from Firestore Map
+  factory Song.fromMap(Map<String, dynamic> map) => Song(
+    id: map['id'] as String,
+    title: map['title'] as String,
+    artist: map['artist'] as String,
+    artwork: map['artwork'] as String?,
+    durationSec: map['durationSec'] as int?,
+  );
+
   @override
   String toString() => 'Song($id, "$title")'; // useful for debug logs
 }

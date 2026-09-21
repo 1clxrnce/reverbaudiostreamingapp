@@ -8,6 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod is the stat
 
 import 'api/ytmusic_api.dart'; // the YouTube Music search API class
 import 'audio/audio_handler.dart'; // the music player class
+import 'services/auth_service.dart'; // Firebase authentication
+import 'services/firestore_service.dart'; // Firestore database
+
+// Export Playlist so other files can use it
+export 'services/firestore_service.dart' show Playlist;
 
 // ── dioProvider ──────────────────────────────────────────────────────────────
 // Creates ONE shared HTTP client for the whole app.
@@ -57,4 +62,50 @@ final searchProvider = FutureProvider.family<List<Song>, String>((ref, query) {
   // otherwise, use the search API to ask YouTube Music for songs matching the query
   // ref.watch(apiProvider) gets the YtMusicApi instance created above
   return ref.watch(apiProvider).searchSongs(query);
+});
+
+// ── authServiceProvider ───────────────────────────────────────────────────────
+// Provides the authentication service for sign in/sign up/sign out
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+
+// ── firestoreServiceProvider ──────────────────────────────────────────────────
+// Provides the Firestore service for playlists, favorites, history
+final firestoreServiceProvider = Provider<FirestoreService>(
+  (ref) => FirestoreService(),
+);
+
+// ── authStateProvider ─────────────────────────────────────────────────────────
+// Stream of current user — rebuilds UI when user signs in/out
+final authStateProvider = StreamProvider((ref) {
+  return ref.watch(authServiceProvider).authStateChanges;
+});
+
+// ── userPlaylistsProvider ─────────────────────────────────────────────────────
+// Stream of user's playlists — updates in real-time when playlists change
+final userPlaylistsProvider = StreamProvider((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(<Playlist>[]);
+
+  return ref.watch(firestoreServiceProvider).getUserPlaylists(user.uid);
+});
+
+// ── userFavoritesProvider ─────────────────────────────────────────────────────
+// Stream of user's favorite songs — updates in real-time
+final userFavoritesProvider = StreamProvider((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(<Song>[]);
+
+  return ref.watch(firestoreServiceProvider).getUserFavorites(user.uid);
+});
+
+// ── isFavoriteProvider ────────────────────────────────────────────────────────
+// Check if a specific song is favorited
+final isFavoriteProvider = FutureProvider.family<bool, String>((
+  ref,
+  songId,
+) async {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return false;
+
+  return ref.watch(firestoreServiceProvider).isFavorite(user.uid, songId);
 });

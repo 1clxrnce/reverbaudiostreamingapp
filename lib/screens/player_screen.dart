@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/ytmusic_api.dart';
 import '../audio/audio_handler.dart';
 import '../providers.dart';
+import '../widgets/favorite_button.dart';
 
 class PlayerScreen extends ConsumerWidget {
   const PlayerScreen({super.key});
@@ -36,6 +37,16 @@ class PlayerScreen extends ConsumerWidget {
           fit: BoxFit.contain,
         ),
         centerTitle: true,
+        actions: [
+          // Heart button for current song
+          ValueListenableBuilder<Song?>(
+            valueListenable: h.current,
+            builder: (_, song, _) {
+              if (song == null) return const SizedBox.shrink();
+              return FavoriteButton(song: song);
+            },
+          ),
+        ],
       ),
       body: SafeArea(child: _Body(h: h)),
     );

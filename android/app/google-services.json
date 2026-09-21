@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "791637187040",
+    "project_id": "reverb-music-app-8b065",
+    "storage_bucket": "reverb-music-app-8b065.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791637187040:android:58965abb3aae1b3f1b7385",
+        "android_client_info": {
+          "package_name": "codes.afk.simple_player"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCLIL9EhXKLY_FSkhXq6oWeYcn0L7wTmo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/ytmusic_api.dart';
 import '../providers.dart';
+import '../widgets/add_to_playlist_sheet.dart';
 import 'player_screen.dart';
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
@@ -70,6 +71,23 @@ class _State extends ConsumerState<SearchScreen> {
           height: 56,
           fit: BoxFit.contain,
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/favorites'),
+            tooltip: 'Favorites',
+          ),
+          IconButton(
+            icon: const Icon(Icons.library_music, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/playlists'),
+            tooltip: 'Playlists',
+          ),
+          IconButton(
+            icon: const Icon(Icons.person, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            tooltip: 'Profile',
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(
@@ -207,12 +225,26 @@ class _Tile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: song.durationSec != null
-          ? Text(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (song.durationSec != null)
+            Text(
               _fmt(Duration(seconds: song.durationSec!)),
               style: const TextStyle(color: Colors.white38, fontSize: 12),
-            )
-          : null,
+            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => AddToPlaylistSheet(song: song),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

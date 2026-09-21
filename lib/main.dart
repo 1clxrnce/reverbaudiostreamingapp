@@ -5,18 +5,38 @@
 import 'package:flutter/material.dart'; // Flutter's UI toolkit — buttons, colors, text, etc.
 import 'package:flutter/services.dart'; // lets us control the Android status bar appearance
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // state management — shares data across the app
+import 'package:firebase_core/firebase_core.dart'; // Firebase initialization
 
 import 'api/ytmusic_channel.dart'; // the bridge that talks to Android native code (Kotlin)
 import 'audio/audio_handler.dart'; // the music player engine
 import 'providers.dart'; // shared objects like the audio handler and search API
+import 'services/auth_service.dart'; // Firebase authentication
 import 'screens/search_screen.dart'; // the first screen the user sees
 import 'screens/splash_screen.dart'; // the splash screen with logo animation
+import 'screens/auth/sign_in_screen.dart'; // sign in screen
+import 'screens/auth/sign_up_screen.dart'; // sign up screen
+import 'screens/auth/profile_screen.dart'; // profile screen
+import 'screens/playlists_screen.dart'; // playlists screen
+import 'screens/favorites_screen.dart'; // favorites screen
 
 // main() is the entry point — Dart runs this first when the app starts
 Future<void> main() async {
   // Flutter needs this before you do anything before runApp()
   // It makes sure Flutter's engine is ready to use
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  // Auto sign in anonymously on first launch
+  final authService = AuthService();
+  if (authService.currentUser == null) {
+    try {
+      await authService.signInAnonymously();
+    } catch (e) {
+      debugPrint('[main] Failed to sign in anonymously: $e');
+    }
+  }
 
   // Style the Android system UI (status bar at the top, nav bar at the bottom)
   SystemChrome.setSystemUIOverlayStyle(
@@ -93,6 +113,11 @@ class App extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/search': (context) => const SearchScreen(),
+        '/sign-in': (context) => const SignInScreen(),
+        '/sign-up': (context) => const SignUpScreen(),
+        '/profile': (context) => const ProfileScreen(),
+        '/playlists': (context) => const PlaylistsScreen(),
+        '/favorites': (context) => const FavoritesScreen(),
       },
     );
   }
