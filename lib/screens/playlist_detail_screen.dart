@@ -334,63 +334,89 @@ class _EmptyState extends StatelessWidget {
 class _SongTile extends StatelessWidget {
   const _SongTile({
     required this.song,
+    required this.index,
     required this.onTap,
     required this.onRemove,
   });
 
   final Song song;
+  final int index;
   final VoidCallback onTap;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        tileColor: const Color(0xFF1C1C1E),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: song.artwork != null
-              ? CachedNetworkImage(
-                  imageUrl: song.artwork!,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) => _placeholder,
-                  errorWidget: (_, _, _) => _placeholder,
-                )
-              : _placeholder,
-        ),
-        title: Text(
-          song.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+      margin: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          splashColor: Colors.white24,
+          highlightColor: Colors.white12,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                // Index number on the left
+                SizedBox(
+                  width: 32,
+                  child: Center(
+                    child: Text(
+                      '$index',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Song info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        song.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // More options button
+                IconButton(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white54,
+                    size: 20,
+                  ),
+                  onPressed: onRemove,
+                ),
+              ],
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          song.artist.isEmpty ? 'Unknown artist' : song.artist,
-          style: const TextStyle(color: Colors.white54, fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.remove_circle_outline, color: Colors.white54),
-          onPressed: onRemove,
         ),
       ),
     );
   }
-
-  static final _placeholder = Container(
-    width: 48,
-    height: 48,
-    color: const Color(0xFF2C2C2E),
-    child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
-  );
 }

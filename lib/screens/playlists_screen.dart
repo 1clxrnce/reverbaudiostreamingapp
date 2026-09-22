@@ -229,75 +229,84 @@ class _PlaylistCard extends StatelessWidget {
         ? playlist.songs.first.artwork
         : null;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1C1C1E),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Artwork or placeholder
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2E),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: Colors.white24,
+        highlightColor: Colors.white12,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Artwork or placeholder
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2E),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                    image: firstArtwork != null
+                        ? DecorationImage(
+                            image: NetworkImage(firstArtwork),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                   ),
-                  image: firstArtwork != null
-                      ? DecorationImage(
-                          image: NetworkImage(firstArtwork),
-                          fit: BoxFit.cover,
+                  child: firstArtwork == null
+                      ? const Center(
+                          child: Icon(
+                            Icons.queue_music,
+                            size: 64,
+                            color: Colors.white24,
+                          ),
                         )
                       : null,
                 ),
-                child: firstArtwork == null
-                    ? const Center(
-                        child: Icon(
-                          Icons.queue_music,
-                          size: 64,
-                          color: Colors.white24,
-                        ),
-                      )
-                    : null,
               ),
-            ),
 
-            // Info section
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    playlist.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
+              // Info section
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playlist.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -360,7 +369,6 @@ class _CreatePlaylistDialog extends ConsumerStatefulWidget {
 
 class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
   final _controller = TextEditingController();
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -372,25 +380,60 @@ class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
 
-    setState(() => _isLoading = true);
+    // Close dialog immediately for instant feel
+    Navigator.pop(context);
+
+    // Show instant feedback
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Creating "$name"...'),
+        duration: const Duration(milliseconds: 800),
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
 
     try {
       final user = ref.read(authStateProvider).value;
       if (user != null) {
         await ref.read(firestoreServiceProvider).createPlaylist(user.uid, name);
       }
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating playlist: $e'),
-            backgroundColor: Colors.red,
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Created "$name"')),
+              ],
+            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Error: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -418,25 +461,16 @@ class _CreatePlaylistDialogState extends ConsumerState<_CreatePlaylistDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
         ),
         ElevatedButton(
-          onPressed: _isLoading ? null : _create,
+          onPressed: _create,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
           ),
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                  ),
-                )
-              : const Text('Create'),
+          child: const Text('Create'),
         ),
       ],
     );

@@ -190,60 +190,86 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        // Hero tag matches the one in PlayerScreen so artwork morphs on open.
-        child: Hero(
-          tag: 'artwork-${song.id}',
-          child: song.artwork != null
-              ? CachedNetworkImage(
-                  imageUrl: song.artwork!,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) => _ph,
-                  errorWidget: (_, _, _) => _ph,
-                )
-              : _ph,
-        ),
-      ),
-      title: Text(
-        song.title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        song.artist.isEmpty ? 'Unknown artist' : song.artist,
-        style: const TextStyle(color: Colors.white54, fontSize: 13),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (song.durationSec != null)
-            Text(
-              _fmt(Duration(seconds: song.durationSec!)),
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
-            ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white54, size: 20),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) => AddToPlaylistSheet(song: song),
-              );
-            },
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.white24,
+        highlightColor: Colors.white12,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                // Hero tag matches the one in PlayerScreen so artwork morphs on open.
+                child: Hero(
+                  tag: 'artwork-${song.id}',
+                  child: song.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: song.artwork!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) => _ph,
+                          errorWidget: (_, _, _) => _ph,
+                        )
+                      : _ph,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      song.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (song.durationSec != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    _fmt(Duration(seconds: song.durationSec!)),
+                    style: const TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                ),
+              IconButton(
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Colors.white54,
+                  size: 20,
+                ),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => AddToPlaylistSheet(song: song),
+                  );
+                },
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
