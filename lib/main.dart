@@ -6,13 +6,13 @@ import 'package:flutter/material.dart'; // Flutter's UI toolkit — buttons, col
 import 'package:flutter/services.dart'; // lets us control the Android status bar appearance
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // state management — shares data across the app
 import 'package:firebase_core/firebase_core.dart'; // Firebase initialization
+import 'firebase_options.dart'; // Firebase configuration
 
 import 'api/ytmusic_channel.dart'; // the bridge that talks to Android native code (Kotlin)
 import 'audio/audio_handler.dart'; // the music player engine
 import 'providers.dart'; // shared objects like the audio handler and search API
 import 'services/auth_service.dart'; // Firebase authentication
-import 'screens/search_screen.dart'; // the first screen the user sees
-import 'screens/splash_screen.dart'; // the splash screen with logo animation
+import 'screens/home_screen.dart'; // redesigned home screen with For You section
 import 'screens/auth/sign_in_screen.dart'; // sign in screen
 import 'screens/auth/sign_up_screen.dart'; // sign up screen
 import 'screens/auth/profile_screen.dart'; // profile screen
@@ -25,17 +25,24 @@ Future<void> main() async {
   // It makes sure Flutter's engine is ready to use
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp();
+  // Initialize Firebase (safe fallback if options are missing)
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Auto sign in anonymously on first launch
-  final authService = AuthService();
-  if (authService.currentUser == null) {
-    try {
-      await authService.signInAnonymously();
-    } catch (e) {
-      debugPrint('[main] Failed to sign in anonymously: $e');
+    // Auto sign in anonymously on first launch
+    final authService = AuthService();
+    if (authService.currentUser == null) {
+      try {
+        await authService.signInAnonymously();
+      } catch (e) {
+        debugPrint('[main] Failed to sign in anonymously: $e');
+      }
     }
+  } catch (e) {
+    debugPrint('[main] Firebase initialization failed: $e');
+    debugPrint('[main] Continuing without Firebase features');
   }
 
   // Style the Android system UI (status bar at the top, nav bar at the bottom)
@@ -46,8 +53,8 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness
           .light, // clock/battery icons are white (visible on dark bg)
       systemNavigationBarColor: Color(
-        0xFF0B0B0D,
-      ), // bottom nav bar matches the app's near-black color
+        0xFF0A0A0F,
+      ), // bottom nav bar matches the new dark background
       systemNavigationBarIconBrightness:
           Brightness.light, // back/home icons are white too
     ),
@@ -87,32 +94,34 @@ class App extends StatelessWidget {
     // MaterialApp is Flutter's standard app wrapper
     // It sets up navigation, theme, and the home screen
     return MaterialApp(
-      title: 'Reverb', // app name shown in Android's recent apps list
+      title: 'REVERB', // official name (all caps)
       debugShowCheckedModeBanner:
           false, // removes the red DEBUG banner in the top-right corner
-      // theme defines how the whole app looks
+      // theme defines how the whole app looks — dark + purple aesthetic
       theme: ThemeData(
-        brightness: Brightness.dark, // dark mode everywhere
+        brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(
-          0xFF0B0B0D,
-        ), // near-black default background for every screen
+          0xFF0A0A0F,
+        ), // near-black with blue undertone
         colorScheme: ColorScheme.dark(
-          surface: const Color(0xFF0B0B0D), // cards and sheets also near-black
-          primary: Colors.white, // primary accent color is white
+          surface: const Color(0xFF14141F), // slightly lighter for cards
+          primary: const Color(0xFF9D4EDD), // vibrant purple for accents
+          secondary: const Color(0xFF6B4C9A), // muted purple for secondary
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(
-            0xFF0B0B0D,
-          ), // top bar matches the background — no contrast line
-          elevation: 0, // no shadow under the app bar
+          backgroundColor: Color(0xFF0A0A0F), // matches background — seamless
+          elevation: 0, // no shadow — clean and flat
+        ),
+        // Purple progress indicators
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: Color(0xFF9D4EDD),
         ),
       ),
 
-      // Start with splash screen, then navigate to search
-      initialRoute: '/',
+      // Start directly at home screen
+      initialRoute: '/home',
       routes: {
-        '/': (context) => const SplashScreen(),
-        '/search': (context) => const SearchScreen(),
+        '/home': (context) => const HomeScreen(),
         '/sign-in': (context) => const SignInScreen(),
         '/sign-up': (context) => const SignUpScreen(),
         '/profile': (context) => const ProfileScreen(),

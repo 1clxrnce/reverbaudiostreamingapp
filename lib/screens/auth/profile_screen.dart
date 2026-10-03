@@ -14,13 +14,10 @@ class ProfileScreen extends ConsumerWidget {
     final authService = ref.read(authServiceProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0D),
+      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0B0D),
-        title: const Text(
-          'Profile',
-          style: TextStyle(color: Colors.white),
-        ),
+        backgroundColor: const Color(0xFF0A0A0F),
+        title: const Text('Profile', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -71,17 +68,11 @@ class _SignedOutView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              'assets/logo 12 black and white.png',
-              height: 100,
-            ),
+            Image.asset('assets/logo 12 black and white.png', height: 100),
             const SizedBox(height: 32),
             const Text(
               'Sign in to save your playlists and favorites',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 16),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
@@ -92,8 +83,10 @@ class _SignedOutView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -110,8 +103,10 @@ class _SignedOutView extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 48,
+                  vertical: 16,
+                ),
                 side: const BorderSide(color: Colors.white54),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -159,7 +154,7 @@ class _SignedInView extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1C1C1E),
+                  color: Color(0xFF14141F),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -314,20 +309,15 @@ class _MenuItem extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: const Color(0xFF1C1C1E),
+      tileColor: const Color(0xFF14141F),
       leading: Icon(icon, color: Colors.white54),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white),
-      ),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
       subtitle: subtitle != null
-          ? Text(
-              subtitle!,
-              style: const TextStyle(color: Colors.white54),
-            )
+          ? Text(subtitle!, style: const TextStyle(color: Colors.white54))
           : null,
-      trailing:
-          onTap != null ? const Icon(Icons.chevron_right, color: Colors.white54) : null,
+      trailing: onTap != null
+          ? const Icon(Icons.chevron_right, color: Colors.white54)
+          : null,
     );
   }
 }

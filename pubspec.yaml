@@ -31,17 +31,33 @@ dependencies:
   # Image caching for artwork
   cached_network_image: ^3.4.1
 
+  # Extract colors from images for dynamic theming
+  palette_generator: ^0.3.3+4
+
   # Firebase - authentication and cloud storage
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.5.2
+  firebase_storage: ^12.3.7
+  
+  # Image picker for custom playlist covers
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
   assets:
     - assets/logo 12 black and white.png
+
+# App icon configuration
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/logo 12 black and white.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/logo 12 black and white.png"

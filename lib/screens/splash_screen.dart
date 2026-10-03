@@ -45,10 +45,10 @@ class _SplashScreenState extends State<SplashScreen>
     // Start the animation
     _controller.forward();
 
-    // Navigate to search screen after 2 seconds
+    // Navigate to home screen after 2 seconds
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/search');
+        Navigator.pushReplacementNamed(context, '/home');
       }
     });
   }
@@ -62,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0D),
+      backgroundColor: const Color(0xFF0A0A0F), // new dark background
       body: Center(
         child: FadeTransition(
           opacity: _fadeIn,

@@ -17,9 +17,9 @@ class PlaylistDetailScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0D),
+      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0B0D),
+        backgroundColor: const Color(0xFF0A0A0F),
         title: Text(playlist.name, style: const TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -28,7 +28,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
-            color: const Color(0xFF1C1C1E),
+            color: const Color(0xFF14141F),
             onSelected: (value) async {
               final user = authState.value;
               if (user == null) return;
@@ -130,7 +130,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C1E),
+        backgroundColor: const Color(0xFF14141F),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Rename Playlist',
@@ -144,7 +144,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
             hintText: 'Playlist name',
             hintStyle: const TextStyle(color: Colors.white38),
             filled: true,
-            fillColor: const Color(0xFF2C2C2E),
+            fillColor: const Color(0xFF14141F),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide.none,
@@ -184,7 +184,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1C1E),
+        backgroundColor: const Color(0xFF14141F),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Delete Playlist',
@@ -239,29 +239,77 @@ class _PlaylistHeader extends StatelessWidget {
       child: Row(
         children: [
           // Large artwork
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2E),
-              borderRadius: BorderRadius.circular(12),
-              image: firstArtwork != null
-                  ? DecorationImage(
-                      image: NetworkImage(firstArtwork),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: firstArtwork == null
-                ? const Icon(Icons.queue_music, size: 48, color: Colors.white24)
-                : null,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: firstArtwork != null
+                ? CachedNetworkImage(
+                    imageUrl: firstArtwork,
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 300),
+                    fadeInCurve: Curves.easeOut,
+                    placeholder: (_, __) => Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14141F),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.queue_music,
+                        size: 48,
+                        color: Colors.white24,
+                      ),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF14141F),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.queue_music,
+                        size: 48,
+                        color: Colors.white24,
+                      ),
+                    ),
+                  )
+                : Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF14141F),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.queue_music,
+                      size: 48,
+                      color: Colors.white24,
+                    ),
+                  ),
           ),
 
           const SizedBox(width: 20),

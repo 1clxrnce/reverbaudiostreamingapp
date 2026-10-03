@@ -16,11 +16,14 @@
 import 'dart:async'; // for unawaited() — fire-and-forget async calls
 
 import 'package:audio_session/audio_session.dart'; // handles headphone unplug + phone call interruptions
+import 'package:firebase_auth/firebase_auth.dart'; // get current user ID
 import 'package:flutter/foundation.dart'; // debugPrint for logging
-import 'package:mpv_audio_kit/mpv_audio_kit.dart'; // mpv audio player — the actual playback engine
+import 'package:mpv_audio_kit/mpv_audio_kit.dart'
+    as mpv; // mpv audio player — the actual playback engine
 
 import '../api/ytmusic_api.dart'; // Song class
 import '../api/ytmusic_channel.dart'; // YtMusicChannel — the bridge to Kotlin for stream URLs
+import '../services/firestore_service.dart'; // save history to Firestore
 
 // The fake URL scheme we use as a placeholder
 // Every song gets a URL like "sunoh-song://dQw4w9WgXcQ" until the real one is fetched
@@ -54,13 +57,17 @@ class AudioHandler {
     unawaited(_initSession());
   }
 
-  late final Player
+  late final mpv.Player
   _player; // the mpv player instance — created in _buildPlayer()
 
   // A dictionary that maps video IDs to Song objects
   // e.g. {"dQw4w9WgXcQ": Song(id:"dQw4w9WgXcQ", title:"Never Gonna...")}
   // Used in the hook to look up song info by ID when mpv fires
   final _byId = <String, Song>{};
+
+  // Services
+  final _firestore = FirestoreService();
+  final _auth = FirebaseAuth.instance;
 
   // ── ValueNotifiers — observable state ────────────────────────────────────────
   // ValueNotifier is like a variable that screams "I CHANGED!" to any widget watching it
@@ -97,19 +104,19 @@ class AudioHandler {
   // ── Player setup ──────────────────────────────────────────────────────────────
 
   // Creates and configures the mpv player
-  Player _buildPlayer() {
-    final p = Player(
-      configuration: const PlayerConfiguration(
+  mpv.Player _buildPlayer() {
+    final p = mpv.Player(
+      configuration: const mpv.PlayerConfiguration(
         autoPlay: true, // start playing as soon as a song is loaded
         initialVolume: 100.0, // start at full volume
-        logLevel: LogLevel.info, // log info messages (useful for debugging)
+        logLevel: mpv.LogLevel.info, // log info messages (useful for debugging)
       ),
     );
 
     // Register the on_load hook — this is what lets us intercept URL loading
     // Without this, mpv would try to open the fake sunoh-song:// URL directly and fail
     // timeout: if we don't respond within 10 seconds, mpv gives up waiting
-    p.registerHook(Hook.load, timeout: const Duration(seconds: 10));
+    p.registerHook(mpv.Hook.load, timeout: const Duration(seconds: 10));
 
     return p;
   }
@@ -120,9 +127,9 @@ class AudioHandler {
   // For fake sunoh-song:// URLs, we fetch the real URL and swap it in.
   // For any other URL (e.g. already a real URL), we just let mpv continue.
 
-  Future<void> _onHook(MpvHookEvent event) async {
+  Future<void> _onHook(mpv.MpvHookEvent event) async {
     // if this hook isn't a "load" event, we don't care — just let mpv continue
-    if (event.hook != Hook.load) {
+    if (event.hook != mpv.Hook.load) {
       _player.continueHook(event.id); // tell mpv: "ok, nothing to do, carry on"
       return;
     }
@@ -208,7 +215,7 @@ class AudioHandler {
 
   // Called whenever mpv's internal playlist changes (new song loaded, song skipped, etc.)
   // Rebuilds our queue list and updates the "current song" display
-  void _syncQueue(Playlist pl) {
+  void _syncQueue(mpv.Playlist pl) {
     // map each mpv playlist item back to a Song using its fake URI to get the ID
     final songs = pl.items
         .map((m) => _byId[_idFromUri(m.uri)]) // look up Song by videoId
@@ -219,7 +226,36 @@ class AudioHandler {
 
     // update the current song based on which index is active in mpv's playlist
     final idx = pl.index;
-    if (idx >= 0 && idx < songs.length) _current.value = songs[idx];
+    if (idx >= 0 && idx < songs.length) {
+      final newSong = songs[idx];
+      final wasPlaying = _current.value;
+      _current.value = newSong;
+
+      // Record play in Firestore if song changed and user is signed in
+      if (wasPlaying?.id != newSong.id) {
+        _recordPlayHistory(newSong);
+      }
+    }
+  }
+
+  // Record that this song was played (for Recently Played section)
+  Future<void> _recordPlayHistory(Song song) async {
+    try {
+      final user = _auth.currentUser;
+      debugPrint('[audio] attempting to record play for: ${song.title}');
+      debugPrint('[audio] user signed in: ${user != null} (uid: ${user?.uid})');
+
+      if (user == null) {
+        debugPrint('[audio] skipping recording - no user signed in');
+        return; // not signed in, skip
+      }
+
+      await _firestore.recordPlay(user.uid, song);
+      debugPrint('[audio] ✓ successfully recorded play: ${song.title}');
+    } catch (e, stackTrace) {
+      debugPrint('[audio] ✗ failed to record play: $e');
+      debugPrint('[audio] stack trace: $stackTrace');
+    }
   }
 
   // ── Public playback controls ──────────────────────────────────────────────────
@@ -236,14 +272,18 @@ class AudioHandler {
 
     // immediately update the "current song" display — UI shows the song name right away
     // even before mpv has started loading (clamp keeps the index in bounds)
-    _current.value = songs[startIndex.clamp(0, songs.length - 1)];
+    final songToPlay = songs[startIndex.clamp(0, songs.length - 1)];
+    _current.value = songToPlay;
+
+    // Record play immediately
+    _recordPlayHistory(songToPlay);
 
     // load the ENTIRE playlist into mpv at once using placeholder URLs
     // mpv will start with the song at startIndex and play through the list
     // each song's real URL gets fetched via the hook when it's actually needed
     await _player.openAll(
       songs
-          .map((s) => Media(s.placeholderUri))
+          .map((s) => mpv.Media(s.placeholderUri))
           .toList(), // "sunoh-song://..." for each song
       index: startIndex.clamp(0, songs.length - 1), // which song to start with
       play: true, // start playing immediately

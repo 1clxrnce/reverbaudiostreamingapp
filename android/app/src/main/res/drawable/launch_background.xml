@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Dark splash screen matching REVERB's theme -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+    <!-- Dark background matching app theme (#0A0A0F) -->
+    <item android:drawable="@color/splash_background" />
 
-    <!-- You can insert your own image assets here -->
+    <!-- You can add your logo here if needed -->
     <!-- <item>
         <bitmap
             android:gravity="center"

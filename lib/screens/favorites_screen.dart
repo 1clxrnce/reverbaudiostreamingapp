@@ -17,9 +17,9 @@ class FavoritesScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0D),
+      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0B0D),
+        backgroundColor: const Color(0xFF0A0A0F),
         title: const Text(
           'Favorites',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -222,7 +222,7 @@ class _FavoriteCard extends StatelessWidget {
         highlightColor: Colors.white12,
         child: Ink(
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
+            color: const Color(0xFF14141F),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -239,28 +239,49 @@ class _FavoriteCard extends StatelessWidget {
               Expanded(
                 child: Stack(
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2C2C2E),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16),
-                        ),
-                        image: song.artwork != null
-                            ? DecorationImage(
-                                image: NetworkImage(song.artwork!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
                       ),
-                      child: song.artwork == null
-                          ? const Center(
-                              child: Icon(
-                                Icons.music_note,
-                                size: 64,
-                                color: Colors.white24,
+                      child: song.artwork != null
+                          ? CachedNetworkImage(
+                              imageUrl: song.artwork!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              fadeInDuration: const Duration(milliseconds: 300),
+                              fadeInCurve: Curves.easeOut,
+                              placeholder: (_, __) => Container(
+                                color: const Color(0xFF14141F),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.music_note,
+                                    size: 64,
+                                    color: Colors.white24,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (_, __, ___) => Container(
+                                color: const Color(0xFF14141F),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.music_note,
+                                    size: 64,
+                                    color: Colors.white24,
+                                  ),
+                                ),
                               ),
                             )
-                          : null,
+                          : Container(
+                              color: const Color(0xFF14141F),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.music_note,
+                                  size: 64,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            ),
                     ),
                     // Heart icon overlay
                     Positioned(
@@ -326,70 +347,4 @@ class _FavoriteCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Old Song Tile (kept for reference, no longer used) ─────────────────────
-
-class _SongTile extends StatelessWidget {
-  const _SongTile({
-    required this.song,
-    required this.onTap,
-    required this.onRemove,
-  });
-
-  final Song song;
-  final VoidCallback onTap;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        tileColor: const Color(0xFF1C1C1E),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: song.artwork != null
-              ? CachedNetworkImage(
-                  imageUrl: song.artwork!,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) => _placeholder,
-                  errorWidget: (_, _, _) => _placeholder,
-                )
-              : _placeholder,
-        ),
-        title: Text(
-          song.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          song.artist.isEmpty ? 'Unknown artist' : song.artist,
-          style: const TextStyle(color: Colors.white54, fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.favorite, color: Colors.redAccent),
-          onPressed: onRemove,
-        ),
-      ),
-    );
-  }
-
-  static final _placeholder = Container(
-    width: 48,
-    height: 48,
-    color: const Color(0xFF2C2C2E),
-    child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
-  );
 }

@@ -17,7 +17,7 @@ class AddToPlaylistSheet extends ConsumerWidget {
 
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1C1C1E),
+        color: Color(0xFF14141F),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -72,7 +72,23 @@ class AddToPlaylistSheet extends ConsumerWidget {
                       itemCount: playlists.length,
                       itemBuilder: (ctx, i) => ListTile(
                         onTap: () async {
+                          // Close sheet immediately for instant feel
+                          Navigator.pop(context);
+
+                          // Show instant feedback
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Adding to ${playlists[i].name}...',
+                              ),
+                              duration: const Duration(milliseconds: 800),
+                              backgroundColor: Colors.grey[800],
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+
                           try {
+                            // Background Firestore update
                             await ref
                                 .read(firestoreServiceProvider)
                                 .addSongToPlaylist(
@@ -80,24 +96,49 @@ class AddToPlaylistSheet extends ConsumerWidget {
                                   playlists[i].id,
                                   song,
                                 );
+
                             if (context.mounted) {
-                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).clearSnackBars();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(
-                                    'Added to ${playlists[i].name}',
+                                  content: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Added to ${playlists[i].name}',
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   duration: const Duration(seconds: 2),
                                   backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             }
                           } catch (e) {
                             if (context.mounted) {
+                              ScaffoldMessenger.of(context).clearSnackBars();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Error: $e'),
+                                  content: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(child: Text('Error: $e')),
+                                    ],
+                                  ),
                                   backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 3),
                                 ),
                               );
                             }
@@ -107,7 +148,7 @@ class AddToPlaylistSheet extends ConsumerWidget {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2C2C2E),
+                            color: const Color(0xFF14141F),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
@@ -117,12 +158,16 @@ class AddToPlaylistSheet extends ConsumerWidget {
                         ),
                         title: Text(
                           playlists[i].name,
-                          style: const TextStyle(color: Colors.white),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         subtitle: Text(
                           '${playlists[i].songs.length} songs',
                           style: const TextStyle(color: Colors.white54),
                         ),
+                        trailing: const Icon(Icons.add, color: Colors.white54),
                       ),
                     );
                   },
@@ -178,18 +223,11 @@ class _SignInPrompt extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.library_music,
-            size: 64,
-            color: Colors.white24,
-          ),
+          const Icon(Icons.library_music, size: 64, color: Colors.white24),
           const SizedBox(height: 16),
           const Text(
             'Sign in to create playlists',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -223,18 +261,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.queue_music,
-            size: 64,
-            color: Colors.white24,
-          ),
+          const Icon(Icons.queue_music, size: 64, color: Colors.white24),
           const SizedBox(height: 16),
           const Text(
             'No playlists yet',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.white, fontSize: 16),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
