@@ -46,3 +46,13 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Temporary documentation and screenshots (not needed in repo)
+*.md
+!README.md
+!HOW_IT_WORKS.md
+flutter_*.png
+
+# IDE-specific configuration
+.claude/
+.kiro/
