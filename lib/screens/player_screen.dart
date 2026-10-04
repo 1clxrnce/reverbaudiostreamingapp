@@ -261,7 +261,7 @@ class _Body extends StatelessWidget {
     return Column(
       children: [
         Text(
-          song == null || song.artist.isEmpty ? 'Unknown artist' : song.artist,
+          song?.title ?? 'No track playing',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 22,
@@ -275,9 +275,9 @@ class _Body extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          song?.title ?? 'No album playing',
+          song == null || song.artist.isEmpty ? 'Unknown artist' : song.artist,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withOpacity(0.6),
             fontSize: 16,
             fontWeight: FontWeight.w500,
             height: 1.3,
