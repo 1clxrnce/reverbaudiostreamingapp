@@ -105,6 +105,12 @@ Song? _parseItem(Map<String, dynamic> m) {
   // Get the artist name from flex column 1
   final artist = _flexText(m, 1);
 
+  // Get album name from flex column 2 (if available)
+  final album = _flexText(m, 2);
+
+  // Get year from flex column 3 (if available)
+  final year = _flexText(m, 3);
+
   // ── Artwork ──
   // YouTube returns a list of thumbnails at different sizes
   // We take the LAST one because it's always the largest/highest quality
@@ -133,6 +139,8 @@ Song? _parseItem(Map<String, dynamic> m) {
     artist: _d(artist),
     artwork: artwork,
     durationSec: durationSec,
+    album: album.isNotEmpty ? _d(album) : null,
+    year: year.isNotEmpty ? _d(year) : null,
   );
 }
 
@@ -197,7 +205,18 @@ String _flexText(Map<String, dynamic> m, int idx) {
   );
 
   // join all the text segments together into one string
-  return runs.whereType<Map>().map((r) => r['text']?.toString() ?? '').join('');
+  final fullText = runs
+      .whereType<Map>()
+      .map((r) => r['text']?.toString() ?? '')
+      .join('');
+
+  // For artist field (column 1), clean up extra info like view counts
+  // YouTube Music format: "Artist Name • 123M views" or "Artist • Album"
+  if (idx == 1 && fullText.contains('•')) {
+    return fullText.split('•').first.trim();
+  }
+
+  return fullText;
 }
 
 // Converts a duration string like "3:45" or "1:03:45" into total seconds
@@ -261,4 +280,231 @@ String _hqThumb(String url) {
   }
 
   return url; // if the URL doesn't have a size token, return it unchanged
+}
+
+// ── Artist Parsing ────────────────────────────────────────────────────────────
+
+// Parse artist search results
+List<Artist> _parseArtists(Map<String, dynamic> body) {
+  final out = <Artist>[];
+
+  for (final shelf in _shelves(body)) {
+    for (final raw in _list(shelf['contents'])) {
+      final item = _asMap(raw)['musicResponsiveListItemRenderer'];
+      if (item == null) continue;
+
+      // Check if this is an artist result (has navigationEndpoint with browseId)
+      final artist = _parseArtistItem(_asMap(item));
+      if (artist != null) out.add(artist);
+    }
+  }
+
+  return out;
+}
+
+// Parse individual artist item from search results
+Artist? _parseArtistItem(Map<String, dynamic> m) {
+  // Get browse ID (artist channel ID) from navigation endpoint
+  final browseId = _dig<String>(m, [
+    'navigationEndpoint',
+    'browseEndpoint',
+    'browseId',
+  ]);
+
+  if (browseId == null || browseId.isEmpty) return null;
+
+  // Get artist name from first flex column
+  final name = _flexText(m, 0);
+  if (name.isEmpty) return null;
+
+  // Get subscriber count from second flex column (e.g., "1.2M subscribers")
+  final subscriberCount = _flexText(m, 1);
+
+  // Get artist thumbnail
+  String? artwork;
+  final thumbs = _list(
+    _dig(m, ['thumbnail', 'musicThumbnailRenderer', 'thumbnail', 'thumbnails']),
+  );
+  if (thumbs.isNotEmpty && thumbs.last is Map) {
+    artwork = (thumbs.last as Map)['url']?.toString();
+  }
+
+  return Artist(
+    id: browseId,
+    name: _d(name),
+    artwork: artwork,
+    subscriberCount: subscriberCount.isEmpty ? null : _d(subscriberCount),
+  );
+}
+
+// Parse songs from an artist's page (browse endpoint response)
+List<Song> _parseArtistPageSongs(Map<String, dynamic> body) {
+  final out = <Song>[];
+
+  // Navigate to the artist page content
+  final tabs = _list(
+    _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
+  );
+
+  for (final tab in tabs) {
+    final tabRenderer = _asMap(tab)['tabRenderer'];
+    if (tabRenderer == null) continue;
+
+    // Look for section list renderer
+    final sections = _list(
+      _dig(tabRenderer, ['content', 'sectionListRenderer', 'contents']),
+    );
+
+    for (final section in sections) {
+      final musicShelf = _asMap(section)['musicShelfRenderer'];
+      if (musicShelf == null) continue;
+
+      // Parse songs from this shelf
+      for (final raw in _list(musicShelf['contents'])) {
+        final item = _asMap(raw)['musicResponsiveListItemRenderer'];
+        if (item == null) continue;
+
+        final song = _parseItem(_asMap(item));
+        if (song != null) out.add(song);
+      }
+    }
+  }
+
+  return out;
+}
+
+// ── Trending Songs Parsing ────────────────────────────────────────────────────
+
+// Parse trending songs from YouTube Music home/charts page
+List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
+  final out = <Song>[];
+
+  try {
+    // Navigate to browse content
+    final tabs = _list(
+      _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
+    );
+
+    for (final tab in tabs) {
+      final tabRenderer = _asMap(tab)['tabRenderer'];
+      if (tabRenderer == null) continue;
+
+      // Look for section list
+      final sections = _list(
+        _dig(tabRenderer, ['content', 'sectionListRenderer', 'contents']),
+      );
+
+      // Search through all sections for songs
+      for (final section in sections) {
+        final sectionMap = _asMap(section);
+
+        // Try different shelf types
+        var shelf = sectionMap['musicCarouselShelfRenderer'];
+        if (shelf == null) shelf = sectionMap['musicShelfRenderer'];
+        if (shelf == null) shelf = sectionMap['musicPlaylistShelfRenderer'];
+
+        if (shelf != null) {
+          final shelfMap = _asMap(shelf);
+
+          // Parse songs from this shelf
+          for (final raw in _list(shelfMap['contents'])) {
+            final rawMap = _asMap(raw);
+
+            // Try different item renderer types
+            var item = rawMap['musicResponsiveListItemRenderer'];
+            if (item != null) {
+              final song = _parseItem(_asMap(item));
+              if (song != null) {
+                out.add(song);
+                if (out.length >= 10) break;
+              }
+            } else {
+              // Try musicTwoRowItemRenderer (carousel format)
+              item = rawMap['musicTwoRowItemRenderer'];
+              if (item != null) {
+                final song = _parseTwoRowItem(_asMap(item));
+                if (song != null) {
+                  out.add(song);
+                  if (out.length >= 10) break;
+                }
+              }
+            }
+          }
+
+          // If we have enough songs, stop searching
+          if (out.length >= 10) break;
+        }
+      }
+
+      // If we have songs, stop searching tabs
+      if (out.isNotEmpty) break;
+    }
+  } catch (e) {
+    debugPrint('[ytmusic] parse trending songs error: $e');
+  }
+
+  return out;
+}
+
+// Parse musicTwoRowItemRenderer (used in home page carousels)
+Song? _parseTwoRowItem(Map<String, dynamic> m) {
+  try {
+    // Extract video ID from navigation endpoint
+    final id = _dig<String>(m, [
+      'navigationEndpoint',
+      'watchEndpoint',
+      'videoId',
+    ]);
+    if (id == null || id.isEmpty) return null;
+
+    // Title is in the first row
+    final titleRuns = _list(_dig(m, ['title', 'runs']));
+    if (titleRuns.isEmpty) return null;
+    final title = _asMap(titleRuns.first)['text']?.toString() ?? '';
+    if (title.isEmpty) return null;
+
+    // Artist is in the subtitle - YouTube Music format is usually:
+    // "Artist Name • 123M views" or just "Artist Name"
+    // We want only the artist name, before any separator
+    final subtitleRuns = _list(_dig(m, ['subtitle', 'runs']));
+    String artist = '';
+    if (subtitleRuns.isNotEmpty) {
+      // Get the first run which is typically the artist
+      final firstRun = _asMap(subtitleRuns.first)['text']?.toString() ?? '';
+      // If it contains a bullet point or separator, take only the part before it
+      if (firstRun.contains('•')) {
+        artist = firstRun.split('•').first.trim();
+      } else if (firstRun.contains('-')) {
+        artist = firstRun.split('-').first.trim();
+      } else {
+        artist = firstRun.trim();
+      }
+    }
+
+    // Artwork
+    String? artwork;
+    final thumbs = _list(
+      _dig(m, [
+        'thumbnailRenderer',
+        'musicThumbnailRenderer',
+        'thumbnail',
+        'thumbnails',
+      ]),
+    );
+    if (thumbs.isNotEmpty && thumbs.last is Map) {
+      final raw = (thumbs.last as Map)['url']?.toString();
+      artwork = raw == null ? null : _hqThumb(raw);
+    }
+
+    return Song(
+      id: id,
+      title: _d(title),
+      artist: _d(artist),
+      artwork: artwork,
+      durationSec: null, // Two-row items usually don't show duration
+    );
+  } catch (e) {
+    debugPrint('[ytmusic] parse two-row item error: $e');
+    return null;
+  }
 }

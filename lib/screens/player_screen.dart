@@ -351,13 +351,7 @@ class _Body extends StatelessWidget {
               title: 'Add to Playlist',
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement add to playlist
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Add to Playlist - Coming soon'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
+                _showAddToPlaylistDialog(context, song);
               },
             ),
             _OptionTile(
@@ -375,47 +369,355 @@ class _Body extends StatelessWidget {
     );
   }
 
-  void _showSongDetails(BuildContext context, Song song) {
+  void _showAddToPlaylistDialog(BuildContext context, Song song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Consumer(
+        builder: (context, ref, child) {
+          final playlistsAsync = ref.watch(userPlaylistsProvider);
+          final user = ref.watch(authStateProvider).value;
+
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A24),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Add to Playlist',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showCreatePlaylistDialog(context);
+                        },
+                        icon: const Icon(Icons.add, color: Color(0xFFFFFFFF)),
+                        label: const Text(
+                          'New',
+                          style: TextStyle(
+                            color: Color(0xFFFFFFFF),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: playlistsAsync.when(
+                    data: (playlists) {
+                      if (playlists.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.playlist_play_rounded,
+                                  size: 64,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No playlists yet',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Create your first playlist',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.4),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: playlists.length,
+                        itemBuilder: (context, index) {
+                          final playlist = playlists[index];
+                          final isInPlaylist = playlist.songs.any(
+                            (s) => s.id == song.id,
+                          );
+
+                          return Material(
+                            color: Colors.transparent,
+                            child: ListTile(
+                              leading: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF14141F),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: playlist.coverUrl != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: CachedNetworkImage(
+                                          imageUrl: playlist.coverUrl!,
+                                          fit: BoxFit.cover,
+                                          fadeInDuration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          fadeInCurve: Curves.easeOut,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.playlist_play_rounded,
+                                        color: Colors.white24,
+                                      ),
+                              ),
+                              title: Text(
+                                playlist.name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${playlist.songs.length} songs',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              trailing: isInPlaylist
+                                  ? const Icon(
+                                      Icons.check_circle_rounded,
+                                      color: Color(0xFFFFFFFF),
+                                    )
+                                  : null,
+                              onTap: isInPlaylist
+                                  ? null
+                                  : () async {
+                                      if (user != null) {
+                                        try {
+                                          await ref
+                                              .read(firestoreServiceProvider)
+                                              .addSongToPlaylist(
+                                                user.uid,
+                                                playlist.id,
+                                                song,
+                                              );
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  '"${song.title}" was added to ${playlist.name}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                  ),
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                                backgroundColor: const Color(
+                                                  0xFF14141F,
+                                                ),
+                                                behavior:
+                                                    SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          debugPrint(
+                                            'Error adding to playlist: $e',
+                                          );
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Failed to add song',
+                                                ),
+                                                duration: Duration(seconds: 2),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      }
+                                    },
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    loading: () => const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(40),
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFFFFFFF),
+                        ),
+                      ),
+                    ),
+                    error: (err, stack) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40),
+                        child: Text(
+                          'Error loading playlists',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context) {
+    final controller = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
-          'Song Details',
+          'Create Playlist',
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DetailRow(label: 'Title', value: song.title),
-            const SizedBox(height: 12),
-            _DetailRow(label: 'Artist', value: song.artist),
-            const SizedBox(height: 12),
-            _DetailRow(
-              label: 'Duration',
-              value: song.duration != null
-                  ? _formatDuration(song.duration!)
-                  : 'Unknown',
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Playlist name',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
+            filled: true,
+            fillColor: const Color(0xFF14141F),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
             ),
-            const SizedBox(height: 12),
-            _DetailRow(label: 'Video ID', value: song.id),
-          ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Close',
+              'Cancel',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withOpacity(0.6),
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Consumer(
+            builder: (context, ref, child) => TextButton(
+              onPressed: () async {
+                final name = controller.text.trim();
+                if (name.isEmpty) return;
+
+                final user = ref.read(authStateProvider).value;
+                if (user != null) {
+                  try {
+                    await ref
+                        .read(firestoreServiceProvider)
+                        .createPlaylist(user.uid, name);
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Created "$name"',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          duration: const Duration(seconds: 2),
+                          backgroundColor: const Color(0xFF14141F),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint('Error creating playlist: $e');
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to create playlist'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: const Text(
+                'Create',
+                style: TextStyle(
+                  color: Color(0xFFFFFFFF),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -428,6 +730,106 @@ class _Body extends StatelessWidget {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds.remainder(60);
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  void _showSongDetails(BuildContext context, Song song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A24),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Header
+            const Text(
+              'Song Details',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Song artwork
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: song.artwork != null
+                    ? CachedNetworkImage(
+                        imageUrl: song.artwork!,
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      )
+                    : Container(
+                        width: 120,
+                        height: 120,
+                        color: const Color(0xFF14141F),
+                        child: const Icon(
+                          Icons.music_note,
+                          size: 48,
+                          color: Colors.white24,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Details list
+            _DetailRow(
+              icon: Icons.music_note_rounded,
+              label: 'Title',
+              value: song.title,
+            ),
+            _DetailRow(
+              icon: Icons.person_rounded,
+              label: 'Artist',
+              value: song.artist.isEmpty ? 'Unknown artist' : song.artist,
+            ),
+            if (song.album != null && song.album!.isNotEmpty)
+              _DetailRow(
+                icon: Icons.album_rounded,
+                label: 'Album',
+                value: song.album!,
+              ),
+            if (song.year != null && song.year!.isNotEmpty)
+              _DetailRow(
+                icon: Icons.calendar_today_rounded,
+                label: 'Year',
+                value: song.year!,
+              ),
+            if (song.durationSec != null)
+              _DetailRow(
+                icon: Icons.access_time_rounded,
+                label: 'Duration',
+                value: _formatDuration(Duration(seconds: song.durationSec!)),
+              ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
   }
 
   static final _artPlaceholder = Container(
@@ -786,27 +1188,39 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFFFFF).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: const Color(0xFFFFFFFF), size: 22),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Icon(icon, color: Colors.white, size: 24),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
     );
   }
 }
@@ -814,35 +1228,63 @@ class _OptionTile extends StatelessWidget {
 // ── Detail Row ────────────────────────────────────────────────────────────────
 
 class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFFFFF).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFFFFFFFF), size: 20),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+          const SizedBox(width: 16),
+          // Label and Value
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

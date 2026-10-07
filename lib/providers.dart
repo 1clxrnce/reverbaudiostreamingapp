@@ -82,18 +82,24 @@ final authStateProvider = StreamProvider((ref) {
 
 // ── userPlaylistsProvider ─────────────────────────────────────────────────────
 // Stream of user's playlists — updates in real-time when playlists change
-final userPlaylistsProvider = StreamProvider((ref) {
+final userPlaylistsProvider = StreamProvider.autoDispose((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(<Playlist>[]);
+
+  // Keep the stream alive for 30 seconds after last use
+  ref.keepAlive();
 
   return ref.watch(firestoreServiceProvider).getUserPlaylists(user.uid);
 });
 
 // ── userFavoritesProvider ─────────────────────────────────────────────────────
 // Stream of user's favorite songs — updates in real-time
-final userFavoritesProvider = StreamProvider((ref) {
+final userFavoritesProvider = StreamProvider.autoDispose((ref) {
   final user = ref.watch(authStateProvider).value;
   if (user == null) return Stream.value(<Song>[]);
+
+  // Keep the stream alive for 30 seconds after last use
+  ref.keepAlive();
 
   return ref.watch(firestoreServiceProvider).getUserFavorites(user.uid);
 });
@@ -108,4 +114,16 @@ final isFavoriteProvider = FutureProvider.family<bool, String>((
   if (user == null) return false;
 
   return ref.watch(firestoreServiceProvider).isFavorite(user.uid, songId);
+});
+
+// ── userHistoryProvider ───────────────────────────────────────────────────────
+// Stream of user's recently played songs - updates in real-time
+final userHistoryProvider = StreamProvider.autoDispose((ref) {
+  final user = ref.watch(authStateProvider).value;
+  if (user == null) return Stream.value(<Song>[]);
+
+  // Keep the stream alive for 30 seconds after last use
+  ref.keepAlive();
+
+  return ref.watch(firestoreServiceProvider).getUserHistory(user.uid, limit: 5);
 });

@@ -1,18 +1,19 @@
 // search_screen.dart
-// Main screen: search bar, results list, mini now-playing bar.
+// Search screen with filter toggle (All/Songs/Artists)
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../api/ytmusic_api.dart';
 import '../providers.dart';
 import '../widgets/add_to_playlist_sheet.dart';
+import 'artist_screen.dart';
 import 'player_screen.dart';
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
 
-// Slide-up transition used everywhere we open the player.
 Route<void> _playerRoute() => PageRouteBuilder<void>(
   pageBuilder: (_, _a, _b) => const PlayerScreen(),
   transitionsBuilder: (_, animation, _c, child) {
@@ -37,12 +38,11 @@ class SearchScreen extends ConsumerStatefulWidget {
 class _State extends ConsumerState<SearchScreen> {
   final _ctrl = TextEditingController();
   String _query = '';
+  SearchType _searchType = SearchType.all; // Default to all
 
   @override
   void initState() {
     super.initState();
-    // Rebuild whenever the text changes so the X button appears/disappears
-    // reactively on every keystroke — not only after a submit.
     _ctrl.addListener(() => setState(() {}));
   }
 
@@ -55,6 +55,7 @@ class _State extends ConsumerState<SearchScreen> {
   void _submit(String v) => setState(() => _query = v.trim());
 
   void _tap(List<Song> songs, int i) {
+    HapticFeedback.lightImpact();
     ref.read(handlerProvider).play(songs, i);
     Navigator.push(context, _playerRoute());
   }
@@ -62,26 +63,33 @@ class _State extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F), // dark background
+      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
         toolbarHeight: 84,
-        title: Image.asset(
-          'assets/logo 12 black and white.png',
-          height: 56,
-          fit: BoxFit.contain,
+        title: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            // Pop all routes until we reach home
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+          child: Image.asset(
+            'assets/logo 12 black and white.png',
+            height: 56,
+            fit: BoxFit.contain,
+          ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.favorite_border,
-              color: Color(0xFF9D4EDD),
-            ), // purple icon
+            icon: const Icon(Icons.favorite_border, color: Color(0xFFFFFFFF)),
             iconSize: 24,
             padding: const EdgeInsets.all(12),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: () => Navigator.pushNamed(context, '/favorites'),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/favorites');
+            },
             tooltip: 'Favorites',
           ),
           IconButton(
@@ -89,7 +97,10 @@ class _State extends ConsumerState<SearchScreen> {
             iconSize: 24,
             padding: const EdgeInsets.all(12),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: () => Navigator.pushNamed(context, '/playlists'),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/playlists');
+            },
             tooltip: 'Playlists',
           ),
           IconButton(
@@ -97,94 +108,208 @@ class _State extends ConsumerState<SearchScreen> {
             iconSize: 24,
             padding: const EdgeInsets.all(12),
             constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.pushNamed(context, '/profile');
+            },
             tooltip: 'Profile',
           ),
           const SizedBox(width: 4),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(68),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: TextField(
-              controller: _ctrl,
-              onSubmitted: _submit,
-              textInputAction: TextInputAction.search,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-              cursorColor: const Color(0xFF9D4EDD), // purple cursor
-              decoration: InputDecoration(
-                hintText: 'Search for a song',
-                hintStyle: const TextStyle(
-                  color: Color(0xFF6E6E7E),
-                  fontSize: 16,
-                ),
-                filled: true,
-                fillColor: const Color(0xFF14141F), // surface dark
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: Color(0xFF6B4C9A), // purple subtle
-                  size: 22,
-                ),
-                // Clear button appears on every keystroke
-                suffixIcon: _ctrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close, color: Color(0xFF6B4C9A)),
-                        iconSize: 20,
-                        onPressed: () {
-                          _ctrl.clear();
-                          _submit('');
-                        },
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+          preferredSize: const Size.fromHeight(
+            120,
+          ), // Increased for filter chips
+          child: Column(
+            children: [
+              // Search bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: TextField(
+                  controller: _ctrl,
+                  onSubmitted: _submit,
+                  textInputAction: TextInputAction.search,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  cursorColor: const Color(0xFFFFFFFF),
+                  decoration: InputDecoration(
+                    hintText:
+                        'Search for ${_searchType == SearchType.all
+                            ? 'songs or artists'
+                            : _searchType == SearchType.songs
+                            ? 'songs'
+                            : 'artists'}',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF6E6E7E),
+                      fontSize: 16,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF14141F),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Color(0xFFAAAAAA),
+                      size: 22,
+                    ),
+                    suffixIcon: _ctrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Color(0xFFAAAAAA),
+                            ),
+                            iconSize: 20,
+                            onPressed: () {
+                              _ctrl.clear();
+                              _submit('');
+                            },
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              // Filter chips
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  children: [
+                    _FilterChip(
+                      label: 'All',
+                      isSelected: _searchType == SearchType.all,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _searchType = SearchType.all);
+                        if (_query.isNotEmpty) _submit(_query);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Songs',
+                      isSelected: _searchType == SearchType.songs,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _searchType = SearchType.songs);
+                        if (_query.isNotEmpty) _submit(_query);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Artists',
+                      isSelected: _searchType == SearchType.artists,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _searchType = SearchType.artists);
+                        if (_query.isNotEmpty) _submit(_query);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
       body: Column(
         children: [
           Expanded(
-            child: _Results(query: _query, onTap: _tap),
+            child: _Results(
+              query: _query,
+              searchType: _searchType,
+              onSongTap: _tap,
+            ),
           ),
           _MiniBar(),
         ],
       ),
     );
   }
-}
+} // ── Filter Chip ────────────────────────────────────────────────────────────────
 
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFFFFFFF) : const Color(0xFF14141F),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFFFFFFF)
+                : const Color(0xFF6E6E7E).withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : const Color(0xFF6E6E7E),
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
 // ── Results ───────────────────────────────────────────────────────────────────
 
 class _Results extends ConsumerWidget {
-  const _Results({required this.query, required this.onTap});
+  const _Results({
+    required this.query,
+    required this.searchType,
+    required this.onSongTap,
+  });
+
   final String query;
-  final void Function(List<Song>, int) onTap;
+  final SearchType searchType;
+  final void Function(List<Song>, int) onSongTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (query.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Search for a song above',
-          style: TextStyle(color: Color(0xFF6E6E7E)), // dim text
+          'Search for ${searchType == SearchType.all
+              ? 'songs or artists'
+              : searchType == SearchType.songs
+              ? 'songs'
+              : 'artists'}',
+          style: const TextStyle(color: Color(0xFF6E6E7E)),
         ),
       );
     }
-
+    // Show artists if searching for artists or all
+    if (searchType == SearchType.artists || searchType == SearchType.all) {
+      return _ArtistAndSongResults(
+        query: query,
+        searchType: searchType,
+        onSongTap: onSongTap,
+      );
+    }
+    // Songs only
     final state = ref.watch(searchProvider(query));
     return state.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF9D4EDD),
-        ), // purple spinner
+        child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
       ),
       error: (e, _) => Center(
         child: Text(
@@ -196,7 +321,7 @@ class _Results extends ConsumerWidget {
         if (songs.isEmpty) {
           return const Center(
             child: Text(
-              'No results',
+              'No songs found',
               style: TextStyle(color: Color(0xFF6E6E7E)),
             ),
           );
@@ -205,17 +330,214 @@ class _Results extends ConsumerWidget {
           padding: const EdgeInsets.only(bottom: 4),
           itemCount: songs.length,
           itemBuilder: (ctx, i) =>
-              _Tile(song: songs[i], onTap: () => onTap(songs, i)),
+              _SongTile(song: songs[i], onTap: () => onSongTap(songs, i)),
         );
       },
     );
   }
 }
 
-// ── Song tile ─────────────────────────────────────────────────────────────────
+// ── Artist and Song Results (for "All" filter) ────────────────────────────────
 
-class _Tile extends StatelessWidget {
-  const _Tile({required this.song, required this.onTap});
+class _ArtistAndSongResults extends ConsumerWidget {
+  const _ArtistAndSongResults({
+    required this.query,
+    required this.searchType,
+    required this.onSongTap,
+  });
+
+  final String query;
+  final SearchType searchType;
+  final void Function(List<Song>, int) onSongTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final api = ref.watch(apiProvider);
+    return FutureBuilder<Map<String, dynamic>>(
+      future:
+          Future.wait([
+            if (searchType != SearchType.artists)
+              api.searchSongs(query, type: searchType),
+            if (searchType != SearchType.songs) api.searchArtists(query),
+          ]).then(
+            (results) => {
+              'songs': searchType != SearchType.artists
+                  ? results[0] as List<Song>
+                  : <Song>[],
+              'artists': searchType != SearchType.songs
+                  ? results[searchType == SearchType.all ? 1 : 0]
+                        as List<Artist>
+                  : <Artist>[],
+            },
+          ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
+          );
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          );
+        }
+        final data = snapshot.data!;
+        final songs = data['songs'] as List<Song>;
+        final artists = data['artists'] as List<Artist>;
+        if (songs.isEmpty && artists.isEmpty) {
+          return const Center(
+            child: Text(
+              'No results found',
+              style: TextStyle(color: Color(0xFF6E6E7E)),
+            ),
+          );
+        }
+        return ListView(
+          children: [
+            // Artists section
+            if (artists.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Text(
+                  'Artists',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...artists.map((artist) => _ArtistTile(artist: artist)),
+            ],
+            // Songs section
+            if (songs.isNotEmpty) ...[
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  artists.isEmpty ? 16 : 24,
+                  16,
+                  8,
+                ),
+                child: const Text(
+                  'Songs',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ...songs.asMap().entries.map(
+                (entry) => _SongTile(
+                  song: entry.value,
+                  onTap: () => onSongTap(songs, entry.key),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Artist Tile ────────────────────────────────────────────────────────────────
+class _ArtistTile extends StatelessWidget {
+  const _ArtistTile({required this.artist});
+
+  final Artist artist;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => ArtistScreen(artist: artist)),
+          );
+        },
+        splashColor: const Color(0xFFFFFFFF).withOpacity(0.15),
+        highlightColor: const Color(0xFFFFFFFF).withOpacity(0.08),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              // Artist avatar
+              ClipOval(
+                child: artist.artwork != null
+                    ? CachedNetworkImage(
+                        imageUrl: artist.artwork!,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        fadeInDuration: const Duration(milliseconds: 300),
+                        fadeInCurve: Curves.easeOut,
+                        placeholder: (_, __) => _placeholder,
+                        errorWidget: (_, __, ___) => _placeholder,
+                      )
+                    : _placeholder,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      artist.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (artist.subscriberCount != null) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        artist.subscriberCount!,
+                        style: const TextStyle(
+                          color: Color(0xFFB4B4C8),
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFFAAAAAA),
+                size: 24,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static final _placeholder = Container(
+    width: 52,
+    height: 52,
+    color: const Color(0xFF14141F),
+    child: const Icon(Icons.person, color: Color(0xFFAAAAAA), size: 28),
+  );
+}
+
+// ── Song Tile ─────────────────────────────────────────────────────────────────
+class _SongTile extends StatelessWidget {
+  const _SongTile({required this.song, required this.onTap});
+
   final Song song;
   final VoidCallback onTap;
 
@@ -225,30 +547,26 @@ class _Tile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: const Color(0xFF9D4EDD).withOpacity(0.15), // purple splash
-        highlightColor: const Color(0xFF9D4EDD).withOpacity(0.08),
+        splashColor: const Color(0xFFFFFFFF).withOpacity(0.15),
+        highlightColor: const Color(0xFFFFFFFF).withOpacity(0.08),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                // Hero tag matches the one in PlayerScreen so artwork morphs on open.
-                child: Hero(
-                  tag: 'artwork-${song.id}',
-                  child: song.artwork != null
-                      ? CachedNetworkImage(
-                          imageUrl: song.artwork!,
-                          width: 52,
-                          height: 52,
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 300),
-                          fadeInCurve: Curves.easeOut,
-                          placeholder: (_, _) => _ph,
-                          errorWidget: (_, _, _) => _ph,
-                        )
-                      : _ph,
-                ),
+                child: song.artwork != null
+                    ? CachedNetworkImage(
+                        imageUrl: song.artwork!,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.cover,
+                        fadeInDuration: const Duration(milliseconds: 300),
+                        fadeInCurve: Curves.easeOut,
+                        placeholder: (_, _) => _ph,
+                        errorWidget: (_, _, _) => _ph,
+                      )
+                    : _ph,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -271,7 +589,7 @@ class _Tile extends StatelessWidget {
                     Text(
                       song.artist.isEmpty ? 'Unknown artist' : song.artist,
                       style: const TextStyle(
-                        color: Color(0xFFB4B4C8), // light gray-purple
+                        color: Color(0xFFB4B4C8),
                         fontSize: 13,
                         height: 1.2,
                       ),
@@ -287,15 +605,15 @@ class _Tile extends StatelessWidget {
                   child: Text(
                     _fmt(Duration(seconds: song.durationSec!)),
                     style: const TextStyle(
-                      color: Color(0xFF6E6E7E),
+                      color: Color(0xFFB4B4C8),
                       fontSize: 12,
-                    ), // dim gray
+                    ),
                   ),
                 ),
               IconButton(
                 icon: const Icon(
                   Icons.more_vert,
-                  color: Color(0xFF6B4C9A), // purple subtle
+                  color: Color(0xFFAAAAAA),
                   size: 20,
                 ),
                 padding: const EdgeInsets.all(12),
@@ -318,12 +636,8 @@ class _Tile extends StatelessWidget {
   static final _ph = Container(
     width: 52,
     height: 52,
-    color: const Color(0xFF14141F), // surface dark
-    child: const Icon(
-      Icons.music_note,
-      color: Color(0xFF6B4C9A),
-      size: 24,
-    ), // purple icon
+    color: const Color(0xFF14141F),
+    child: const Icon(Icons.music_note, color: Color(0xFFAAAAAA), size: 24),
   );
 
   String _fmt(Duration d) {
@@ -333,67 +647,60 @@ class _Tile extends StatelessWidget {
   }
 }
 
-// ── Mini now-playing bar ──────────────────────────────────────────────────────
-
+// ── Mini Bar ──────────────────────────────────────────────────────────────────
 class _MiniBar extends ConsumerWidget {
+  const _MiniBar();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final h = ref.watch(handlerProvider);
-
     return ValueListenableBuilder<Song?>(
       valueListenable: h.current,
       builder: (_, song, _) {
         if (song == null) return const SizedBox.shrink();
-
         return GestureDetector(
-          onTap: () => Navigator.push(context, _playerRoute()),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.push(context, _playerRoute());
+          },
           child: Container(
             margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF14141F), // surface dark
+              color: const Color(0xFF14141F),
               borderRadius: BorderRadius.circular(12),
             ),
-            // ClipRRect so the progress strip respects the rounded corners.
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Main row: artwork | title+artist | controls ──
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
-                        // Artwork — Hero tag matches the current song so it
-                        // morphs into the full artwork on the player screen.
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Hero(
-                            tag: 'artwork-${song.id}',
-                            child: song.artwork != null
-                                ? CachedNetworkImage(
-                                    imageUrl: song.artwork!,
-                                    width: 48,
-                                    height: 48,
-                                    fit: BoxFit.cover,
-                                    fadeInDuration: const Duration(
-                                      milliseconds: 300,
-                                    ),
-                                    fadeInCurve: Curves.easeOut,
-                                  )
-                                : Container(
-                                    width: 48,
-                                    height: 48,
-                                    color: const Color(
-                                      0xFF14141F,
-                                    ), // surface dark
-                                    child: const Icon(
-                                      Icons.music_note,
-                                      color: Color(0xFF6B4C9A), // purple
-                                      size: 20,
-                                    ),
+                          child: song.artwork != null
+                              ? CachedNetworkImage(
+                                  imageUrl: song.artwork!,
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  fadeInDuration: const Duration(
+                                    milliseconds: 300,
                                   ),
-                          ),
+                                  fadeInCurve: Curves.easeOut,
+                                )
+                              : Container(
+                                  width: 48,
+                                  height: 48,
+                                  color: const Color(0xFF14141F),
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: Color(0xFFAAAAAA),
+                                    size: 20,
+                                  ),
+                                ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -416,7 +723,7 @@ class _MiniBar extends ConsumerWidget {
                               Text(
                                 song.artist.isEmpty ? 'Unknown' : song.artist,
                                 style: const TextStyle(
-                                  color: Color(0xFFB4B4C8), // light gray-purple
+                                  color: Color(0xFFB4B4C8),
                                   fontSize: 12,
                                   height: 1.2,
                                 ),
@@ -433,7 +740,7 @@ class _MiniBar extends ConsumerWidget {
                               playing
                                   ? Icons.pause_rounded
                                   : Icons.play_arrow_rounded,
-                              color: const Color(0xFF9D4EDD), // purple
+                              color: const Color(0xFFFFFFFF),
                               size: 28,
                             ),
                             padding: const EdgeInsets.all(10),
@@ -441,13 +748,16 @@ class _MiniBar extends ConsumerWidget {
                               minWidth: 48,
                               minHeight: 48,
                             ),
-                            onPressed: playing ? h.pause : h.resume,
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              playing ? h.pause() : h.resume();
+                            },
                           ),
                         ),
                         IconButton(
                           icon: const Icon(
                             Icons.skip_next_rounded,
-                            color: Color(0xFF9D4EDD), // purple
+                            color: Color(0xFFFFFFFF),
                             size: 28,
                           ),
                           padding: const EdgeInsets.all(10),
@@ -455,14 +765,14 @@ class _MiniBar extends ConsumerWidget {
                             minWidth: 48,
                             minHeight: 48,
                           ),
-                          onPressed: h.next,
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            h.next();
+                          },
                         ),
                       ],
                     ),
                   ),
-
-                  // ── Seek progress strip ──
-                  // A thin bar that fills left-to-right as the song plays.
                   ValueListenableBuilder<Duration>(
                     valueListenable: h.position,
                     builder: (_, pos, _) => ValueListenableBuilder<Duration>(
@@ -477,11 +787,9 @@ class _MiniBar extends ConsumerWidget {
                         return LinearProgressIndicator(
                           value: progress,
                           minHeight: 2.5,
-                          backgroundColor: const Color(
-                            0xFF14141F,
-                          ), // surface dark
+                          backgroundColor: const Color(0xFF14141F),
                           valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF9D4EDD), // purple progress
+                            Color(0xFFFFFFFF),
                           ),
                         );
                       },

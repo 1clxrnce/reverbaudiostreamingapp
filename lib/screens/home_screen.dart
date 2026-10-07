@@ -13,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import '../api/ytmusic_api.dart';
 import '../providers.dart';
 import '../widgets/add_to_playlist_sheet.dart';
+import 'discover_screen.dart'; // For trendingSongsProvider
 import 'player_screen.dart';
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
@@ -107,10 +108,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Logo and actions
           Row(
             children: [
-              Image.asset(
-                'assets/logo 12 black and white.png',
-                height: 36,
-                fit: BoxFit.contain,
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  // If searching, exit search mode
+                  if (_isSearching) {
+                    _searchCtrl.clear();
+                    _submit('');
+                    setState(() => _isSearching = false);
+                  } else {
+                    // Otherwise pop all routes until home
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  }
+                },
+                child: Image.asset(
+                  'assets/logo 12 black and white.png',
+                  height: 36,
+                  fit: BoxFit.contain,
+                ),
               ),
               const Spacer(),
               IconButton(
@@ -143,50 +158,69 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          // Search bar
-          TextField(
-            controller: _searchCtrl,
-            onSubmitted: (v) {
-              _submit(v);
-              setState(() => _isSearching = true);
-            },
-            onTap: () => setState(() => _isSearching = true),
-            textInputAction: TextInputAction.search,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            cursorColor: Colors.white,
-            decoration: InputDecoration(
-              hintText: 'Search songs, artists, albums...',
-              hintStyle: const TextStyle(
-                color: Color(0xFF6E6E7E),
-                fontSize: 16,
+          // Search bar with back button when searching
+          Row(
+            children: [
+              if (_isSearching)
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    _searchCtrl.clear();
+                    _submit('');
+                    setState(() => _isSearching = false);
+                  },
+                  tooltip: 'Back to home',
+                ),
+              Expanded(
+                child: TextField(
+                  controller: _searchCtrl,
+                  onSubmitted: (v) {
+                    _submit(v);
+                    setState(() => _isSearching = true);
+                  },
+                  onTap: () => setState(() => _isSearching = true),
+                  textInputAction: TextInputAction.search,
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  cursorColor: Colors.white,
+                  decoration: InputDecoration(
+                    hintText: 'Search songs, artists, albums...',
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF6E6E7E),
+                      fontSize: 16,
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFF14141F),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Colors.white54,
+                      size: 22,
+                    ),
+                    suffixIcon: _isSearching && _query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white54,
+                            ),
+                            iconSize: 20,
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              _submit('');
+                            },
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
               ),
-              filled: true,
-              fillColor: const Color(0xFF14141F),
-              prefixIcon: const Icon(
-                Icons.search,
-                color: Colors.white54,
-                size: 22,
-              ),
-              suffixIcon: _isSearching
-                  ? IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white54),
-                      iconSize: 20,
-                      onPressed: () {
-                        _searchCtrl.clear();
-                        _submit('');
-                        setState(() => _isSearching = false);
-                      },
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
+            ],
           ),
         ],
       ),
@@ -213,15 +247,198 @@ class _HomeContent extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 16),
         physics: const AlwaysScrollableScrollPhysics(),
         children: [
-          if (user != null) ...[
-            _QuickAccessSection(onTap: onTap),
-            const SizedBox(height: 24),
-            _RecentlyPlayedSection(onTap: onTap),
-            const SizedBox(height: 24),
-            _MyPlaylistsSection(onTap: onTap),
-          ] else
-            _WelcomeSection(),
+          _TrendingSection(onTap: onTap),
+          const SizedBox(height: 24),
+          if (user != null) _QuickAccessSection(onTap: onTap),
+          if (user != null) const SizedBox(height: 24),
+          _RecentlyPlayedSection(onTap: onTap),
+          const SizedBox(height: 24),
+          _MyPlaylistsSection(onTap: onTap),
+          if (user == null) ...[const SizedBox(height: 24), _WelcomeSection()],
         ],
+      ),
+    );
+  }
+}
+
+// ── Trending Section ──────────────────────────────────────────────────────────
+
+class _TrendingSection extends ConsumerWidget {
+  const _TrendingSection({required this.onTap});
+  final void Function(List<Song>, int) onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trendingAsync = ref.watch(trendingSongsProvider);
+
+    return trendingAsync.when(
+      data: (songs) {
+        if (songs.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Trending Now',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Icon(
+                    Icons.local_fire_department_rounded,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 24,
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 180,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                scrollDirection: Axis.horizontal,
+                itemCount: songs.length,
+                itemBuilder: (ctx, i) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _TrendingSongCard(
+                    song: songs[i],
+                    rank: i + 1,
+                    onTap: () => onTap(songs, i),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _TrendingSongCard extends StatelessWidget {
+  const _TrendingSongCard({
+    required this.song,
+    required this.rank,
+    required this.onTap,
+  });
+
+  final Song song;
+  final int rank;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 140,
+          decoration: BoxDecoration(
+            color: const Color(0xFF14141F),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Artwork with rank badge
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                    child: song.artwork != null
+                        ? CachedNetworkImage(
+                            imageUrl: song.artwork!,
+                            width: 140,
+                            height: 110,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 140,
+                            height: 110,
+                            color: const Color(0xFF1E1E2E),
+                            child: const Icon(
+                              Icons.music_note_rounded,
+                              size: 40,
+                              color: Colors.white24,
+                            ),
+                          ),
+                  ),
+                  // Rank badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '#$rank',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Song info
+              Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      song.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      song.artist.isEmpty ? 'Unknown' : song.artist,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -285,11 +502,7 @@ class _QuickAccessSection extends ConsumerWidget {
                 color: Colors.white,
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  // Scroll to top of home screen to access search
-                  Scrollable.ensureVisible(
-                    context,
-                    duration: const Duration(milliseconds: 300),
-                  );
+                  Navigator.pushNamed(context, '/discover');
                 },
               ),
             ],
@@ -429,19 +642,19 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
-    if (user == null) return const SizedBox.shrink();
+    debugPrint('[home] Recently Played - user signed in: ${user != null}');
+    debugPrint('[home] Recently Played - user uid: ${user?.uid ?? "none"}');
 
-    final historyStream = ref.watch(
-      StreamProvider.autoDispose(
-        (ref) => ref
-            .read(firestoreServiceProvider)
-            .getUserHistory(user.uid, limit: 10),
-      ),
-    );
+    if (user == null) {
+      debugPrint('[home] Recently Played - no user, returning empty');
+      return const SizedBox.shrink();
+    }
+
+    final historyAsync = ref.watch(userHistoryProvider);
 
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: historyStream.when(
+      child: historyAsync.when(
         data: (songs) {
           debugPrint('[home] Recently Played loaded: ${songs.length} songs');
           if (songs.isEmpty) {
@@ -522,17 +735,25 @@ class _MyPlaylistsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).value;
-    if (user == null) return const SizedBox.shrink();
+    debugPrint('[home] My Playlists - user signed in: ${user != null}');
+    debugPrint('[home] My Playlists - user uid: ${user?.uid ?? "none"}');
 
-    final playlistsStream = ref.watch(
-      StreamProvider.autoDispose(
-        (ref) => ref.read(firestoreServiceProvider).getUserPlaylists(user.uid),
-      ),
-    );
+    if (user == null) {
+      debugPrint('[home] My Playlists - no user, returning empty');
+      return const SizedBox.shrink();
+    }
 
-    return playlistsStream.when(
+    final playlistsAsync = ref.watch(userPlaylistsProvider);
+
+    return playlistsAsync.when(
       data: (playlists) {
+        debugPrint('[home] My Playlists loaded: ${playlists.length} playlists');
+        for (final p in playlists) {
+          debugPrint('[home]   - ${p.name} (${p.songs.length} songs)');
+        }
+
         if (playlists.isEmpty) {
+          debugPrint('[home] No playlists found - showing empty state');
           return _EmptyState(
             icon: Icons.queue_music,
             title: 'No playlists yet',
@@ -606,17 +827,24 @@ class _MyPlaylistsSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => _SkeletonLoader(title: 'My Playlists'),
-      error: (error, _) => _ErrorState(
-        title: 'My Playlists',
-        message: 'Could not load playlists',
-        onRetry: () => ref.invalidate(
-          StreamProvider.autoDispose(
-            (ref) =>
-                ref.read(firestoreServiceProvider).getUserPlaylists(user.uid),
+      loading: () {
+        debugPrint('[home] My Playlists loading...');
+        return _SkeletonLoader(title: 'My Playlists');
+      },
+      error: (error, stackTrace) {
+        debugPrint('[home] My Playlists error: $error');
+        debugPrint('[home] Stack trace: $stackTrace');
+        return _ErrorState(
+          title: 'My Playlists',
+          message: 'Could not load playlists',
+          onRetry: () => ref.invalidate(
+            StreamProvider.autoDispose(
+              (ref) =>
+                  ref.read(firestoreServiceProvider).getUserPlaylists(user.uid),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -647,9 +875,7 @@ class _PlaylistCard extends ConsumerWidget {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    4,
-                  ), // Slightly rounded for cards
+                  borderRadius: BorderRadius.circular(4),
                   child: playlist.coverUrl != null
                       ? CachedNetworkImage(
                           imageUrl: playlist.coverUrl!,
@@ -658,10 +884,10 @@ class _PlaylistCard extends ConsumerWidget {
                           fit: BoxFit.cover,
                           fadeInDuration: const Duration(milliseconds: 300),
                           fadeInCurve: Curves.easeOut,
-                          placeholder: (_, __) => _placeholder,
-                          errorWidget: (_, __, ___) => _placeholder,
+                          placeholder: (_, __) => _buildDefaultCover(),
+                          errorWidget: (_, __, ___) => _buildDefaultCover(),
                         )
-                      : _placeholder,
+                      : _buildDefaultCover(),
                 ),
                 // Edit button overlay
                 Positioned(
@@ -719,6 +945,125 @@ class _PlaylistCard extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => _CoverOptionsSheet(playlist: playlist),
     );
+  }
+
+  Widget _buildDefaultCover() {
+    // Get first 4 songs with artwork
+    final songsWithArt = playlist.songs
+        .where((s) => s.artwork != null && s.artwork!.isNotEmpty)
+        .take(4)
+        .toList();
+
+    if (songsWithArt.isEmpty) {
+      // No songs with artwork - show placeholder
+      return Container(
+        width: 140,
+        height: 140,
+        color: const Color(0xFF14141F),
+        child: const Center(
+          child: Icon(Icons.queue_music, color: Colors.white24, size: 48),
+        ),
+      );
+    }
+
+    // Build grid based on number of songs
+    return SizedBox(
+      width: 140,
+      height: 140,
+      child: _buildArtworkGrid(songsWithArt),
+    );
+  }
+
+  Widget _buildArtworkGrid(List<Song> songs) {
+    if (songs.length == 1) {
+      // Single artwork - full size
+      return CachedNetworkImage(
+        imageUrl: songs[0].artwork!,
+        fit: BoxFit.cover,
+        fadeInDuration: const Duration(milliseconds: 300),
+        fadeInCurve: Curves.easeOut,
+      );
+    } else if (songs.length == 2) {
+      // Two artworks - side by side
+      return Row(
+        children: [
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[0].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+          const SizedBox(width: 1),
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[1].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+        ],
+      );
+    } else if (songs.length == 3) {
+      // Three artworks - one on left, two stacked on right
+      return Row(
+        children: [
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[0].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+          const SizedBox(width: 1),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: CachedNetworkImage(
+                    imageUrl: songs[1].artwork!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 300),
+                    fadeInCurve: Curves.easeOut,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Expanded(
+                  child: CachedNetworkImage(
+                    imageUrl: songs[2].artwork!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 300),
+                    fadeInCurve: Curves.easeOut,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Four artworks - 2x2 grid
+      return GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 1,
+          crossAxisSpacing: 1,
+        ),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return CachedNetworkImage(
+            imageUrl: songs[index].artwork!,
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 300),
+            fadeInCurve: Curves.easeOut,
+          );
+        },
+      );
+    }
   }
 
   static final _placeholder = Container(
@@ -1228,25 +1573,22 @@ class _SongCard extends StatelessWidget {
             // Artwork with optional badge
             Stack(
               children: [
-                Hero(
-                  tag: 'artwork-${song.id}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                      4,
-                    ), // Slightly rounded for cards
-                    child: song.artwork != null
-                        ? CachedNetworkImage(
-                            imageUrl: song.artwork!,
-                            width: 140,
-                            height: 140,
-                            fit: BoxFit.cover,
-                            fadeInDuration: const Duration(milliseconds: 300),
-                            fadeInCurve: Curves.easeOut,
-                            placeholder: (_, __) => _placeholder,
-                            errorWidget: (_, __, ___) => _placeholder,
-                          )
-                        : _placeholder,
-                  ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    4,
+                  ), // Slightly rounded for cards
+                  child: song.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: song.artwork!,
+                          width: 140,
+                          height: 140,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeInCurve: Curves.easeOut,
+                          placeholder: (_, __) => _placeholder,
+                          errorWidget: (_, __, ___) => _placeholder,
+                        )
+                      : _placeholder,
                 ),
                 // Favorite badge
                 if (showBadge)
@@ -1585,34 +1927,31 @@ class _MiniBar extends ConsumerWidget {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          Hero(
-                            tag: 'artwork-${song.id}',
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                4,
-                              ), // Slightly rounded
-                              child: song.artwork != null
-                                  ? CachedNetworkImage(
-                                      imageUrl: song.artwork!,
-                                      width: 48,
-                                      height: 48,
-                                      fit: BoxFit.cover,
-                                      fadeInDuration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      fadeInCurve: Curves.easeOut,
-                                    )
-                                  : Container(
-                                      width: 48,
-                                      height: 48,
-                                      color: const Color(0xFF14141F),
-                                      child: const Icon(
-                                        Icons.music_note,
-                                        color: Colors.white24,
-                                        size: 20,
-                                      ),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              4,
+                            ), // Slightly rounded
+                            child: song.artwork != null
+                                ? CachedNetworkImage(
+                                    imageUrl: song.artwork!,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    fadeInDuration: const Duration(
+                                      milliseconds: 300,
                                     ),
-                            ),
+                                    fadeInCurve: Curves.easeOut,
+                                  )
+                                : Container(
+                                    width: 48,
+                                    height: 48,
+                                    color: const Color(0xFF14141F),
+                                    child: const Icon(
+                                      Icons.music_note,
+                                      color: Colors.white24,
+                                      size: 20,
+                                    ),
+                                  ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(

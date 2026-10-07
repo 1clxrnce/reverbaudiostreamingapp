@@ -18,6 +18,7 @@ import 'screens/auth/sign_up_screen.dart'; // sign up screen
 import 'screens/auth/profile_screen.dart'; // profile screen
 import 'screens/playlists_screen.dart'; // playlists screen
 import 'screens/favorites_screen.dart'; // favorites screen
+import 'screens/discover_screen.dart'; // discover/trending songs screen
 
 // main() is the entry point — Dart runs this first when the app starts
 Future<void> main() async {
@@ -105,8 +106,8 @@ class App extends StatelessWidget {
         ), // near-black with blue undertone
         colorScheme: ColorScheme.dark(
           surface: const Color(0xFF14141F), // slightly lighter for cards
-          primary: const Color(0xFF9D4EDD), // vibrant purple for accents
-          secondary: const Color(0xFF6B4C9A), // muted purple for secondary
+          primary: const Color(0xFFFFFFFF), // vibrant purple for accents
+          secondary: const Color(0xFFEEEEEE), // muted purple for secondary
         ),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF0A0A0F), // matches background — seamless
@@ -114,7 +115,7 @@ class App extends StatelessWidget {
         ),
         // Purple progress indicators
         progressIndicatorTheme: const ProgressIndicatorThemeData(
-          color: Color(0xFF9D4EDD),
+          color: Color(0xFFFFFFFF),
         ),
       ),
 
@@ -127,6 +128,7 @@ class App extends StatelessWidget {
         '/profile': (context) => const ProfileScreen(),
         '/playlists': (context) => const PlaylistsScreen(),
         '/favorites': (context) => const FavoritesScreen(),
+        '/discover': (context) => const DiscoverScreen(),
       },
     );
   }
