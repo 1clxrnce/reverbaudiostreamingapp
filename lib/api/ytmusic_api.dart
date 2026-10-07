@@ -283,15 +283,15 @@ class YtMusicApi {
       );
 
       if (res.data == null) {
-          return const [];
+        return const [];
       }
 
       // Parse trending songs and limit to top 10
       final songs = _parseTrendingSongs(res.data!);
+      debugPrint('[API] Parsed ${songs.length} trending songs');
       return songs.take(10).toList();
     } catch (e) {
       return const [];
     }
   }
 }
-
