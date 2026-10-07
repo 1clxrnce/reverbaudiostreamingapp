@@ -187,10 +187,7 @@ class _TrendingSongTile extends StatelessWidget {
               color: const Color(0xFF14141F),
               borderRadius: BorderRadius.circular(12),
               border: rank <= 3
-                  ? Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    )
+                  ? Border.all(color: Colors.white.withOpacity(0.1), width: 1)
                   : null,
             ),
             child: Row(
@@ -268,15 +265,16 @@ class _TrendingSongTile extends StatelessWidget {
                             ),
                           )
                         : Container(
-                          width: 56,
-                          height: 56,
-                          color: const Color(0xFF1E1E2E),
-                          child: const Icon(
-                            Icons.music_note,
-                            color: Colors.white24,
-                            size: 24,
+                            width: 56,
+                            height: 56,
+                            color: const Color(0xFF1E1E2E),
+                            child: const Icon(
+                              Icons.music_note,
+                              color: Colors.white24,
+                              size: 24,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
                 const SizedBox(width: 12),
 
