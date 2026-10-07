@@ -478,28 +478,40 @@ class _ArtistTile extends StatelessWidget {
             MaterialPageRoute(builder: (_) => ArtistScreen(artist: artist)),
           );
         },
-        splashColor: const Color(0xFFFFFFFF).withOpacity(0.15),
-        highlightColor: const Color(0xFFFFFFFF).withOpacity(0.08),
+        splashColor: Colors.white.withOpacity(0.1),
+        highlightColor: Colors.white.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              // Artist avatar
-              ClipOval(
-                child: artist.artwork != null
-                    ? CachedNetworkImage(
-                        imageUrl: artist.artwork!,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 300),
-                        fadeInCurve: Curves.easeOut,
-                        placeholder: (_, __) => _placeholder,
-                        errorWidget: (_, __, ___) => _placeholder,
-                      )
-                    : _placeholder,
+              // Artist avatar with shadow
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: artist.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: artist.artwork!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeInCurve: Curves.easeOut,
+                          placeholder: (_, __) => _placeholder,
+                          errorWidget: (_, __, ___) => _placeholder,
+                        )
+                      : _placeholder,
+                ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,8 +521,8 @@ class _ArtistTile extends StatelessWidget {
                       artist.name,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -543,10 +555,10 @@ class _ArtistTile extends StatelessWidget {
   }
 
   static final _placeholder = Container(
-    width: 52,
-    height: 52,
+    width: 60,
+    height: 60,
     color: const Color(0xFF14141F),
-    child: const Icon(Icons.person, color: Color(0xFFAAAAAA), size: 28),
+    child: const Icon(Icons.person, color: Color(0xFFAAAAAA), size: 32),
   );
 }
 
@@ -563,28 +575,42 @@ class _SongTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: const Color(0xFFFFFFFF).withOpacity(0.15),
-        highlightColor: const Color(0xFFFFFFFF).withOpacity(0.08),
+        splashColor: Colors.white.withOpacity(0.1),
+        highlightColor: Colors.white.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: song.artwork != null
-                    ? CachedNetworkImage(
-                        imageUrl: song.artwork!,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 300),
-                        fadeInCurve: Curves.easeOut,
-                        placeholder: (_, _) => _ph,
-                        errorWidget: (_, _, _) => _ph,
-                      )
-                    : _ph,
+              // Artwork
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: song.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: song.artwork!,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeInCurve: Curves.easeOut,
+                          placeholder: (_, _) => _ph,
+                          errorWidget: (_, _, _) => _ph,
+                        )
+                      : _ph,
+                ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
+              // Song info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -594,18 +620,18 @@ class _SongTile extends StatelessWidget {
                       song.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
                         height: 1.3,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       song.artist.isEmpty ? 'Unknown artist' : song.artist,
                       style: const TextStyle(
-                        color: Color(0xFFB4B4C8),
+                        color: Color(0xFF9E9E9E),
                         fontSize: 13,
                         height: 1.2,
                       ),
@@ -615,14 +641,22 @@ class _SongTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (song.durationSec != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Text(
-                    _fmt(Duration(seconds: song.durationSec!)),
-                    style: const TextStyle(
-                      color: Color(0xFFB4B4C8),
-                      fontSize: 12,
+              // Duration and menu
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (song.durationSec != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        _fmt(Duration(seconds: song.durationSec!)),
+                        style: const TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                     ),
                   ),
                 ),
@@ -650,10 +684,10 @@ class _SongTile extends StatelessWidget {
   }
 
   static final _ph = Container(
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     color: const Color(0xFF14141F),
-    child: const Icon(Icons.music_note, color: Color(0xFFAAAAAA), size: 24),
+    child: const Icon(Icons.music_note, color: Color(0xFFAAAAAA), size: 28),
   );
 
   String _fmt(Duration d) {
