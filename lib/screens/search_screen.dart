@@ -175,7 +175,7 @@ class _State extends ConsumerState<SearchScreen> {
               ),
               // Filter chips
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 child: Row(
                   children: [
                     _FilterChip(
@@ -187,7 +187,7 @@ class _State extends ConsumerState<SearchScreen> {
                         if (_query.isNotEmpty) _submit(_query);
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _FilterChip(
                       label: 'Songs',
                       isSelected: _searchType == SearchType.songs,
@@ -197,7 +197,7 @@ class _State extends ConsumerState<SearchScreen> {
                         if (_query.isNotEmpty) _submit(_query);
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _FilterChip(
                       label: 'Artists',
                       isSelected: _searchType == SearchType.artists,
@@ -245,25 +245,26 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFFFFFFF) : const Color(0xFF14141F),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? Colors.white : const Color(0xFF14141F),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFFFFFFF)
-                : const Color(0xFF6E6E7E).withOpacity(0.3),
-            width: 1,
+                ? Colors.white
+                : const Color(0xFF6E6E7E).withOpacity(0.4),
+            width: 1.5,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : const Color(0xFF6E6E7E),
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected ? Colors.black : Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
       ),
