@@ -291,10 +291,10 @@ class YtMusicApi {
         return const [];
       }
 
-      // Parse trending songs and limit to top 5
+      // Parse trending songs and limit to top 10
       final songs = _parseTrendingSongs(res.data!);
       debugPrint('[ytmusic] Parsed ${songs.length} trending songs');
-      return songs.take(5).toList();
+      return songs.take(10).toList();
     } catch (e) {
       debugPrint('[ytmusic] get trending songs error: $e');
       return const [];
