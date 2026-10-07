@@ -860,10 +860,6 @@ class _PlaylistCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
       onTap: onTap,
-      onLongPress: () {
-        HapticFeedback.mediumImpact();
-        _showCoverOptions(context, ref);
-      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 140,
@@ -871,48 +867,21 @@ class _PlaylistCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cover artwork with edit button overlay
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: playlist.coverUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: playlist.coverUrl!,
-                          width: 140,
-                          height: 140,
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 300),
-                          fadeInCurve: Curves.easeOut,
-                          placeholder: (_, __) => _buildDefaultCover(),
-                          errorWidget: (_, __, ___) => _buildDefaultCover(),
-                        )
-                      : _buildDefaultCover(),
-                ),
-                // Edit button overlay
-                Positioned(
-                  bottom: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      _showCoverOptions(context, ref);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            // Cover artwork
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: playlist.coverUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: playlist.coverUrl!,
+                      width: 140,
+                      height: 140,
+                      fit: BoxFit.cover,
+                      fadeInDuration: const Duration(milliseconds: 300),
+                      fadeInCurve: Curves.easeOut,
+                      placeholder: (_, __) => _buildDefaultCover(),
+                      errorWidget: (_, __, ___) => _buildDefaultCover(),
+                    )
+                  : _buildDefaultCover(),
             ),
             const SizedBox(height: 8),
             // Name
@@ -936,14 +905,6 @@ class _PlaylistCard extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showCoverOptions(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _CoverOptionsSheet(playlist: playlist),
     );
   }
 
@@ -1078,286 +1039,6 @@ class _PlaylistCard extends ConsumerWidget {
 }
 
 // ── Cover Options Sheet ───────────────────────────────────────────────────────
-
-class _CoverOptionsSheet extends ConsumerWidget {
-  const _CoverOptionsSheet({required this.playlist});
-  final Playlist playlist;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF14141F),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                'Change Cover',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            _OptionTile(
-              icon: Icons.photo_library,
-              label: 'Choose from device',
-              onTap: () async {
-                Navigator.pop(context);
-                await _pickImageFromDevice(context, ref);
-              },
-            ),
-            _OptionTile(
-              icon: Icons.link,
-              label: 'Enter image URL',
-              onTap: () {
-                Navigator.pop(context);
-                _showUrlDialog(context, ref);
-              },
-            ),
-            if (playlist.coverUrl != null)
-              _OptionTile(
-                icon: Icons.delete_outline,
-                label: 'Remove cover',
-                isDestructive: true,
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _removeCover(context, ref);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickImageFromDevice(BuildContext context, WidgetRef ref) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image == null) return;
-
-      // Upload to Firebase Storage
-      final user = ref.read(authStateProvider).value;
-      if (user == null) return;
-
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('playlist_covers')
-          .child(
-            '${user.uid}_${playlist.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
-          );
-
-      final bytes = await image.readAsBytes();
-      await storageRef.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      final downloadUrl = await storageRef.getDownloadURL();
-
-      // Update playlist
-      await ref
-          .read(firestoreServiceProvider)
-          .updatePlaylistCover(user.uid, playlist.id, downloadUrl);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cover updated'),
-            backgroundColor: Color(0xFF14141F),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update cover: $e'),
-            backgroundColor: Colors.red.shade900,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
-
-  void _showUrlDialog(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF14141F),
-        title: const Text('Image URL', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'https://...',
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-            filled: true,
-            fillColor: const Color(0xFF0A0A0F),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white54),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              final url = controller.text.trim();
-              if (url.isEmpty) return;
-
-              Navigator.pop(ctx);
-
-              final user = ref.read(authStateProvider).value;
-              if (user == null) return;
-
-              try {
-                await ref
-                    .read(firestoreServiceProvider)
-                    .updatePlaylistCover(user.uid, playlist.id, url);
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Cover updated'),
-                      backgroundColor: Color(0xFF14141F),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to update cover: $e'),
-                      backgroundColor: Colors.red.shade900,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _removeCover(BuildContext context, WidgetRef ref) async {
-    final user = ref.read(authStateProvider).value;
-    if (user == null) return;
-
-    try {
-      await ref
-          .read(firestoreServiceProvider)
-          .updatePlaylistCover(user.uid, playlist.id, null);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cover removed'),
-            backgroundColor: Color(0xFF14141F),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to remove cover: $e'),
-            backgroundColor: Colors.red.shade900,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    }
-  }
-}
-
-// ── Option Tile ───────────────────────────────────────────────────────────────
-
-class _OptionTile extends StatelessWidget {
-  const _OptionTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isDestructive ? Colors.red : Colors.white,
-              size: 24,
-            ),
-            const SizedBox(width: 16),
-            Text(
-              label,
-              style: TextStyle(
-                color: isDestructive ? Colors.red : Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Skeleton Loader ───────────────────────────────────────────────────────────
 
 class _SkeletonLoader extends StatelessWidget {
   const _SkeletonLoader({required this.title});
