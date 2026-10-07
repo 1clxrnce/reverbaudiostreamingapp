@@ -3,8 +3,10 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../api/ytmusic_api.dart';
 import '../providers.dart';
 import 'playlist_detail_screen.dart';
 
@@ -20,9 +22,15 @@ class PlaylistsScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
-        title: const Text(
-          'Playlists',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+          child: const Text(
+            'Playlists',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
@@ -225,13 +233,6 @@ class _PlaylistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use custom cover if set, otherwise use first song artwork
-    final coverImage =
-        playlist.coverUrl ??
-        (playlist.songs.isNotEmpty && playlist.songs.first.artwork != null
-            ? playlist.songs.first.artwork
-            : null);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -263,45 +264,18 @@ class _PlaylistCard extends StatelessWidget {
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(16),
                       ),
-                      child: coverImage != null
+                      child: playlist.coverUrl != null
                           ? CachedNetworkImage(
-                              imageUrl: coverImage,
+                              imageUrl: playlist.coverUrl!,
                               width: double.infinity,
                               height: double.infinity,
                               fit: BoxFit.cover,
                               fadeInDuration: const Duration(milliseconds: 300),
                               fadeInCurve: Curves.easeOut,
-                              placeholder: (_, __) => Container(
-                                color: const Color(0xFF14141F),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.queue_music,
-                                    size: 64,
-                                    color: Colors.white24,
-                                  ),
-                                ),
-                              ),
-                              errorWidget: (_, __, ___) => Container(
-                                color: const Color(0xFF14141F),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.queue_music,
-                                    size: 64,
-                                    color: Colors.white24,
-                                  ),
-                                ),
-                              ),
+                              placeholder: (_, __) => _buildPlaceholder(),
+                              errorWidget: (_, __, ___) => _buildPlaceholder(),
                             )
-                          : Container(
-                              color: const Color(0xFF14141F),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.queue_music,
-                                  size: 64,
-                                  color: Colors.white24,
-                                ),
-                              ),
-                            ),
+                          : _buildDefaultCover(),
                     ),
                     // Custom cover indicator
                     if (playlist.coverUrl != null)
@@ -357,6 +331,123 @@ class _PlaylistCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: const Color(0xFF14141F),
+      child: const Center(
+        child: Icon(Icons.queue_music, size: 64, color: Colors.white24),
+      ),
+    );
+  }
+
+  Widget _buildDefaultCover() {
+    // Get first 4 songs with artwork
+    final songsWithArt = playlist.songs
+        .where((s) => s.artwork != null && s.artwork!.isNotEmpty)
+        .take(4)
+        .toList();
+
+    if (songsWithArt.isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    return _buildArtworkGrid(songsWithArt);
+  }
+
+  Widget _buildArtworkGrid(List<Song> songs) {
+    if (songs.length == 1) {
+      // Single artwork - full size
+      return CachedNetworkImage(
+        imageUrl: songs[0].artwork!,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        fadeInDuration: const Duration(milliseconds: 300),
+        fadeInCurve: Curves.easeOut,
+      );
+    } else if (songs.length == 2) {
+      // Two artworks - side by side
+      return Row(
+        children: [
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[0].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[1].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+        ],
+      );
+    } else if (songs.length == 3) {
+      // Three artworks - one on left, two stacked on right
+      return Row(
+        children: [
+          Expanded(
+            child: CachedNetworkImage(
+              imageUrl: songs[0].artwork!,
+              fit: BoxFit.cover,
+              fadeInDuration: const Duration(milliseconds: 300),
+              fadeInCurve: Curves.easeOut,
+            ),
+          ),
+          const SizedBox(width: 2),
+          Expanded(
+            child: Column(
+              children: [
+                Expanded(
+                  child: CachedNetworkImage(
+                    imageUrl: songs[1].artwork!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 300),
+                    fadeInCurve: Curves.easeOut,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Expanded(
+                  child: CachedNetworkImage(
+                    imageUrl: songs[2].artwork!,
+                    fit: BoxFit.cover,
+                    fadeInDuration: const Duration(milliseconds: 300),
+                    fadeInCurve: Curves.easeOut,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // Four or more artworks - 2x2 grid
+      return GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 2,
+          crossAxisSpacing: 2,
+        ),
+        itemCount: 4,
+        itemBuilder: (context, index) {
+          return CachedNetworkImage(
+            imageUrl: songs[index].artwork!,
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 300),
+            fadeInCurve: Curves.easeOut,
+          );
+        },
+      );
+    }
   }
 
   void _showCoverOptions(BuildContext context) {
@@ -528,49 +619,58 @@ class _CoverOptionsSheet extends ConsumerWidget {
 
                 // Pick from songs
                 if (playlist.songs.isNotEmpty)
-                  ListTile(
-                    leading: const Icon(
-                      Icons.photo_library,
-                      color: Colors.white,
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.photo_library,
+                        color: Colors.white,
+                      ),
+                      title: const Text(
+                        'Choose from songs',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSongArtworkPicker(context, ref);
+                      },
                     ),
+                  ),
+
+                // Enter URL
+                Material(
+                  color: Colors.transparent,
+                  child: ListTile(
+                    leading: const Icon(Icons.link, color: Colors.white),
                     title: const Text(
-                      'Choose from songs',
+                      'Enter image URL',
                       style: TextStyle(color: Colors.white),
                     ),
                     onTap: () {
                       Navigator.pop(context);
-                      _showSongArtworkPicker(context, ref);
+                      _showUrlDialog(context, ref);
                     },
                   ),
-
-                // Enter URL
-                ListTile(
-                  leading: const Icon(Icons.link, color: Colors.white),
-                  title: const Text(
-                    'Enter image URL',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showUrlDialog(context, ref);
-                  },
                 ),
 
                 // Remove cover
                 if (playlist.coverUrl != null)
-                  ListTile(
-                    leading: const Icon(
-                      Icons.delete_outline,
-                      color: Colors.redAccent,
+                  Material(
+                    color: Colors.transparent,
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
+                      title: const Text(
+                        'Remove custom cover',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _removeCover(ref);
+                      },
                     ),
-                    title: const Text(
-                      'Remove custom cover',
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _removeCover(ref);
-                    },
                   ),
               ],
             ),

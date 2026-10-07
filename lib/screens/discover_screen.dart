@@ -46,7 +46,8 @@ class DiscoverScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 80),
+            padding: const EdgeInsets.only(top: 12, bottom: 80),
+            physics: const BouncingScrollPhysics(),
             itemCount: songs.length,
             itemBuilder: (ctx, i) => _TrendingSongTile(
               rank: i + 1,
@@ -62,9 +63,8 @@ class DiscoverScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
-        ),
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: Colors.white)),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -76,7 +76,7 @@ class DiscoverScreen extends ConsumerWidget {
                   size: 64,
                   color: Colors.white54,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
                 const Text(
                   'Failed to load trending songs',
                   style: TextStyle(
@@ -86,7 +86,7 @@ class DiscoverScreen extends ConsumerWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
                   e.toString(),
                   style: const TextStyle(color: Colors.white54, fontSize: 13),
@@ -94,7 +94,7 @@ class DiscoverScreen extends ConsumerWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 ElevatedButton(
                   onPressed: () {
                     ref.invalidate(trendingSongsProvider);
@@ -107,7 +107,7 @@ class DiscoverScreen extends ConsumerWidget {
                       vertical: 14,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
@@ -173,7 +173,7 @@ class _TrendingSongTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -182,57 +182,83 @@ class _TrendingSongTile extends StatelessWidget {
           splashColor: Colors.white.withOpacity(0.1),
           highlightColor: Colors.white.withOpacity(0.05),
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: const Color(0xFF14141F),
               borderRadius: BorderRadius.circular(12),
+              border: rank <= 3
+                  ? Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    )
+                  : null,
             ),
             child: Row(
               children: [
                 // Rank Badge
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: rank <= 3 ? Colors.white : const Color(0xFF1E1E2E),
                     shape: BoxShape.circle,
+                    boxShadow: rank <= 3
+                        ? [
+                            BoxShadow(
+                              color: Colors.white.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Center(
                     child: Text(
                       '$rank',
                       style: TextStyle(
                         color: rank <= 3 ? Colors.black : Colors.white,
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
 
                 // Artwork
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: song.artwork != null
-                      ? CachedNetworkImage(
-                          imageUrl: song.artwork!,
-                          width: 56,
-                          height: 56,
-                          fit: BoxFit.cover,
-                          fadeInDuration: const Duration(milliseconds: 300),
-                          placeholder: (_, __) => Container(
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: song.artwork != null
+                        ? CachedNetworkImage(
+                            imageUrl: song.artwork!,
                             width: 56,
                             height: 56,
-                            color: const Color(0xFF1E1E2E),
-                            child: const Icon(
-                              Icons.music_note,
-                              color: Colors.white24,
-                              size: 24,
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 300),
+                            placeholder: (_, __) => Container(
+                              width: 56,
+                              height: 56,
+                              color: const Color(0xFF1E1E2E),
+                              child: const Icon(
+                                Icons.music_note,
+                                color: Colors.white24,
+                                size: 24,
+                              ),
                             ),
-                          ),
-                          errorWidget: (_, __, ___) => Container(
-                            width: 56,
-                            height: 56,
+                            errorWidget: (_, __, ___) => Container(
+                              width: 56,
+                              height: 56,
                             color: const Color(0xFF1E1E2E),
                             child: const Icon(
                               Icons.music_note,

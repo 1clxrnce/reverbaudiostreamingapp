@@ -3,16 +3,24 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/ytmusic_api.dart';
 import '../providers.dart';
 import 'player_screen.dart';
 
-class FavoritesScreen extends ConsumerWidget {
+class FavoritesScreen extends ConsumerStatefulWidget {
   const FavoritesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
+  bool _isGridView = true; // true = grid, false = list
+
+  @override
+  Widget build(BuildContext context) {
     final favoritesAsync = ref.watch(userFavoritesProvider);
     final authState = ref.watch(authStateProvider);
 
@@ -20,14 +28,36 @@ class FavoritesScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
-        title: const Text(
-          'Favorites',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+          child: const Text(
+            'Favorites',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          // View toggle button
+          IconButton(
+            icon: Icon(
+              _isGridView ? Icons.list : Icons.grid_view,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              setState(() {
+                _isGridView = !_isGridView;
+              });
+            },
+            tooltip: _isGridView ? 'List view' : 'Grid view',
+          ),
+        ],
       ),
       body: authState.when(
         data: (user) {
@@ -41,16 +71,40 @@ class FavoritesScreen extends ConsumerWidget {
                 return _EmptyState();
               }
 
-              return GridView.builder(
-                padding: const EdgeInsets.all(20),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.75,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
+              // Grid view
+              if (_isGridView) {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(20),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: favorites.length,
+                  itemBuilder: (ctx, i) => _FavoriteCard(
+                    song: favorites[i],
+                    onTap: () {
+                      ref.read(handlerProvider).play(favorites, i);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PlayerScreen()),
+                      );
+                    },
+                    onRemove: () async {
+                      await ref
+                          .read(firestoreServiceProvider)
+                          .removeFromFavorites(user.uid, favorites[i].id);
+                    },
+                  ),
+                );
+              }
+
+              // List view
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: favorites.length,
-                itemBuilder: (ctx, i) => _FavoriteCard(
+                itemBuilder: (ctx, i) => _FavoriteListTile(
                   song: favorites[i],
                   onTap: () {
                     ref.read(handlerProvider).play(favorites, i);
@@ -342,6 +396,146 @@ class _FavoriteCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Favorite List Tile (for List View) ────────────────────────────────────
+
+class _FavoriteListTile extends StatelessWidget {
+  const _FavoriteListTile({
+    required this.song,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  final Song song;
+  final VoidCallback onTap;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: Colors.white24,
+          highlightColor: Colors.white12,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: const Color(0xFF14141F),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  // Artwork
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: song.artwork != null
+                        ? CachedNetworkImage(
+                            imageUrl: song.artwork!,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            fadeInDuration: const Duration(milliseconds: 300),
+                            fadeInCurve: Curves.easeOut,
+                            placeholder: (_, __) => Container(
+                              width: 56,
+                              height: 56,
+                              color: const Color(0xFF1E1E2E),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.music_note,
+                                  size: 24,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            ),
+                            errorWidget: (_, __, ___) => Container(
+                              width: 56,
+                              height: 56,
+                              color: const Color(0xFF1E1E2E),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.music_note,
+                                  size: 24,
+                                  color: Colors.white24,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            width: 56,
+                            height: 56,
+                            color: const Color(0xFF1E1E2E),
+                            child: const Center(
+                              child: Icon(
+                                Icons.music_note,
+                                size: 24,
+                                color: Colors.white24,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // Song info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          song.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Remove button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onRemove,
+                      customBorder: const CircleBorder(),
+                      splashColor: Colors.redAccent.withOpacity(0.3),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.redAccent,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

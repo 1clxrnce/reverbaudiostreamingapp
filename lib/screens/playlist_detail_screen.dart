@@ -3,6 +3,7 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/ytmusic_api.dart';
 import '../providers.dart';
@@ -20,7 +21,16 @@ class PlaylistDetailScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
-        title: Text(playlist.name, style: const TextStyle(color: Colors.white)),
+        title: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+          child: Text(
+            playlist.name,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -82,6 +92,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                     itemBuilder: (ctx, i) => _SongTile(
                       song: playlist.songs[i],
                       index: i + 1,
+                      playlistName: playlist.name,
                       onTap: () {
                         ref.read(handlerProvider).play(playlist.songs, i);
                         Navigator.push(
@@ -383,12 +394,14 @@ class _SongTile extends StatelessWidget {
   const _SongTile({
     required this.song,
     required this.index,
+    required this.playlistName,
     required this.onTap,
     required this.onRemove,
   });
 
   final Song song;
   final int index;
+  final String playlistName;
   final VoidCallback onTap;
   final VoidCallback onRemove;
 
@@ -396,75 +409,167 @@ class _SongTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          splashColor: Colors.white24,
-          highlightColor: Colors.white12,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: [
-                // Index number on the left
-                SizedBox(
-                  width: 32,
-                  child: Center(
-                    child: Text(
-                      '$index',
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+      child: Dismissible(
+        key: Key(song.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: Colors.redAccent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.delete_outline_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        confirmDismiss: (direction) async {
+          return await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1A1A24),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              title: const Text(
+                'Remove Song',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Text(
+                'Remove "${song.title}" from this playlist?',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 16,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 16,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Song info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        song.title,
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    'Remove',
+                    style: TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        onDismissed: (direction) {
+          onRemove();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '"${song.title}" was removed from $playlistName',
+                style: const TextStyle(color: Colors.white),
+              ),
+              duration: const Duration(seconds: 2),
+              backgroundColor: const Color(0xFF14141F),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        },
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(8),
+            splashColor: Colors.white24,
+            highlightColor: Colors.white12,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                children: [
+                  // Index number on the left
+                  SizedBox(
+                    width: 32,
+                    child: Center(
+                      child: Text(
+                        '$index',
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Colors.white54,
+                          fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          fontSize: 15,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Song info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          song.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          song.artist.isEmpty ? 'Unknown artist' : song.artist,
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Duration if available
+                  if (song.duration != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        _formatDuration(song.duration!),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 13,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
-                ),
-                // More options button
-                IconButton(
-                  icon: const Icon(
-                    Icons.more_vert,
-                    color: Colors.white54,
-                    size: 20,
-                  ),
-                  onPressed: onRemove,
-                ),
-              ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 }

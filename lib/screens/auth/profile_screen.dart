@@ -2,6 +2,7 @@
 // User profile and account management
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers.dart';
 
@@ -17,7 +18,13 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0A0A0F),
-        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        title: GestureDetector(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            Navigator.popUntil(context, (route) => route.isFirst);
+          },
+          child: const Text('Profile', style: TextStyle(color: Colors.white)),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -237,18 +244,21 @@ class _SignedInView extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Sign out button
-        ListTile(
-          onTap: onSignOut,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          tileColor: Colors.red.withOpacity(0.1),
-          leading: const Icon(Icons.logout, color: Colors.redAccent),
-          title: const Text(
-            'Sign Out',
-            style: TextStyle(
-              color: Colors.redAccent,
-              fontWeight: FontWeight.bold,
+        Material(
+          color: Colors.transparent,
+          child: ListTile(
+            onTap: onSignOut,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: Colors.red.withOpacity(0.1),
+            leading: const Icon(Icons.logout, color: Colors.redAccent),
+            title: const Text(
+              'Sign Out',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -306,18 +316,21 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: const Color(0xFF14141F),
-      leading: Icon(icon, color: Colors.white54),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      subtitle: subtitle != null
-          ? Text(subtitle!, style: const TextStyle(color: Colors.white54))
-          : null,
-      trailing: onTap != null
-          ? const Icon(Icons.chevron_right, color: Colors.white54)
-          : null,
+    return Material(
+      color: Colors.transparent,
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        tileColor: const Color(0xFF14141F),
+        leading: Icon(icon, color: Colors.white54),
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        subtitle: subtitle != null
+            ? Text(subtitle!, style: const TextStyle(color: Colors.white54))
+            : null,
+        trailing: onTap != null
+            ? const Icon(Icons.chevron_right, color: Colors.white54)
+            : null,
+      ),
     );
   }
 }
