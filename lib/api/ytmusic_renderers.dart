@@ -216,6 +216,12 @@ String _flexText(Map<String, dynamic> m, int idx) {
     return fullText.split('•').first.trim();
   }
 
+  // For album field (column 2), also clean up view counts/play counts
+  // Format might be "Album Name • 198M plays" or similar
+  if (idx == 2 && fullText.contains('•')) {
+    return fullText.split('•').first.trim();
+  }
+
   return fullText;
 }
 
