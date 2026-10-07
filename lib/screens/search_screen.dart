@@ -657,9 +657,8 @@ class _SongTile extends StatelessWidget {
                         ),
                       ),
                     ),
-                    ),
-                  ),
-                ),
+                ],
+              ),
               IconButton(
                 icon: const Icon(
                   Icons.more_vert,
