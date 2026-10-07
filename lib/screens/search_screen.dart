@@ -173,11 +173,27 @@ class _State extends ConsumerState<SearchScreen> {
                   ),
                 ),
               ),
-              // Filter chips
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              // Filter chips - PROMINENT AND VISIBLE
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF1A1A24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
+                    const Icon(Icons.tune, color: Colors.white, size: 22),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Filter:',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     _FilterChip(
                       label: 'All',
                       isSelected: _searchType == SearchType.all,
@@ -247,7 +263,7 @@ class _FilterChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : const Color(0xFF14141F),
           borderRadius: BorderRadius.circular(24),
@@ -255,15 +271,15 @@ class _FilterChip extends StatelessWidget {
             color: isSelected
                 ? Colors.white
                 : const Color(0xFF9E9E9E).withOpacity(0.4),
-            width: 1.5,
+            width: 2,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isSelected ? Colors.black : Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
         ),
