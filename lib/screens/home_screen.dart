@@ -328,8 +328,14 @@ class _TrendingSection extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator(color: Colors.white)),
+      ),
+      error: (e, __) {
+        debugPrint('[Home] Trending error: $e');
+        return const SizedBox.shrink();
+      },
     );
   }
 }
