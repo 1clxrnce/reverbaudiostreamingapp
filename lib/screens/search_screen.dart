@@ -396,38 +396,53 @@ class _ArtistAndSongResults extends ConsumerWidget {
           );
         }
         return ListView(
+          padding: const EdgeInsets.only(bottom: 80),
           children: [
             // Artists section
             if (artists.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  'Artists',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Container(
+                color: const Color(0xFF14141F),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Artists',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               ...artists.map((artist) => _ArtistTile(artist: artist)),
+              if (songs.isNotEmpty) const SizedBox(height: 8),
             ],
             // Songs section
             if (songs.isNotEmpty) ...[
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   16,
-                  artists.isEmpty ? 16 : 24,
+                  artists.isEmpty ? 16 : 8,
                   16,
                   8,
                 ),
-                child: const Text(
-                  'Songs',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.music_note, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Songs',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               ...songs.asMap().entries.map(
