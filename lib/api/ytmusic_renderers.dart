@@ -386,11 +386,12 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
   final out = <Song>[];
 
   try {
+    debugPrint('[Parser] Starting to parse trending songs...');
     // Navigate to browse content
     final tabs = _list(
       _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
     );
-
+    debugPrint('[Parser] Found ${tabs.length} tabs');
 
     for (final tab in tabs) {
       final tabRenderer = _asMap(tab)['tabRenderer'];
@@ -401,7 +402,6 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
         _dig(tabRenderer, ['content', 'sectionListRenderer', 'contents']),
       );
 
-  
       // Search through all sections for songs
       for (final section in sections) {
         final sectionMap = _asMap(section);
@@ -426,7 +426,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
             if (item != null) {
               final song = _parseItem(_asMap(item));
               if (song != null) {
-                            out.add(song);
+                out.add(song);
                 if (out.length >= 10) break;
               }
             } else {
@@ -435,7 +435,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
               if (item != null) {
                 final song = _parseTwoRowItem(_asMap(item));
                 if (song != null) {
-                                out.add(song);
+                  out.add(song);
                   if (out.length >= 10) break;
                 }
               }
@@ -450,10 +450,11 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
       // If we have songs, stop searching tabs
       if (out.isNotEmpty) break;
     }
-
   } catch (e) {
+    debugPrint('[Parser] Error parsing trending songs: $e');
   }
 
+  debugPrint('[Parser] Finished parsing, found ${out.length} songs');
   return out;
 }
 
@@ -518,4 +519,3 @@ Song? _parseTwoRowItem(Map<String, dynamic> m) {
     return null;
   }
 }
-
