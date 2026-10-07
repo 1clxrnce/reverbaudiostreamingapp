@@ -29,20 +29,32 @@ class ArtistScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0F),
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
           // Artist header
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 300,
             pinned: true,
             backgroundColor: const Color(0xFF0A0A0F),
             leading: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.6),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
+                child: const Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -66,18 +78,18 @@ class ArtistScreen extends ConsumerWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          const Color(0xFF0A0A0F).withOpacity(0.7),
+                          const Color(0xFF0A0A0F).withOpacity(0.75),
                           const Color(0xFF0A0A0F),
                         ],
-                        stops: const [0.0, 0.7, 1.0],
+                        stops: const [0.0, 0.65, 1.0],
                       ),
                     ),
                   ),
                   // Artist info
                   Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 20,
+                    left: 24,
+                    right: 24,
+                    bottom: 24,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -85,20 +97,22 @@ class ArtistScreen extends ConsumerWidget {
                           artist.name,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                            letterSpacing: -0.5,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                         if (artist.subscriberCount != null) ...[
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           Text(
                             artist.subscriberCount!,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
-                              fontSize: 14,
+                            style: const TextStyle(
+                              color: Color(0xFF9E9E9E),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
@@ -116,23 +130,35 @@ class ArtistScreen extends ConsumerWidget {
               if (songs.isEmpty) {
                 return SliverFillRemaining(
                   child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.music_off,
-                          size: 64,
-                          color: Colors.white24,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No songs found',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 16,
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.music_off,
+                            size: 64,
+                            color: Colors.white24,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          Text(
+                            'No songs found',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Check back later',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -144,7 +170,7 @@ class ArtistScreen extends ConsumerWidget {
                     if (index == 0) {
                       // Play all button
                       return Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                         child: ElevatedButton.icon(
                           onPressed: () {
                             HapticFeedback.mediumImpact();
@@ -156,15 +182,23 @@ class ArtistScreen extends ConsumerWidget {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.play_arrow_rounded),
-                          label: const Text('Play All'),
+                          icon: const Icon(Icons.play_arrow_rounded, size: 24),
+                          label: const Text(
+                            'Play All',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Colors.black,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
+                              horizontal: 28,
                               vertical: 16,
                             ),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -194,26 +228,44 @@ class ArtistScreen extends ConsumerWidget {
             },
             loading: () => const SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: Colors.white54),
+                child: CircularProgressIndicator(color: Colors.white),
               ),
             ),
             error: (error, _) => SliverFillRemaining(
               child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: $error',
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.white54,
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Failed to load songs',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        error.toString(),
+                        style: const TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -238,29 +290,42 @@ class _SongTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: Colors.white24,
-        highlightColor: Colors.white12,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: Colors.white.withOpacity(0.1),
+        highlightColor: Colors.white.withOpacity(0.05),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Row(
             children: [
               // Artwork
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: song.artwork != null
-                    ? CachedNetworkImage(
-                        imageUrl: song.artwork!,
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        fadeInDuration: const Duration(milliseconds: 300),
-                        fadeInCurve: Curves.easeOut,
-                        placeholder: (_, __) => _placeholder,
-                        errorWidget: (_, __, ___) => _placeholder,
-                      )
-                    : _placeholder,
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.25),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: song.artwork != null
+                      ? CachedNetworkImage(
+                          imageUrl: song.artwork!,
+                          width: 56,
+                          height: 56,
+                          fit: BoxFit.cover,
+                          fadeInDuration: const Duration(milliseconds: 300),
+                          fadeInCurve: Curves.easeOut,
+                          placeholder: (_, __) => _placeholder,
+                          errorWidget: (_, __, ___) => _placeholder,
+                        )
+                      : _placeholder,
+                ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 16),
               // Song info
               Expanded(
                 child: Column(
@@ -271,17 +336,17 @@ class _SongTile extends StatelessWidget {
                       song.title,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         fontSize: 15,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
                     Text(
                       song.artist.isEmpty ? 'Unknown artist' : song.artist,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                      style: const TextStyle(
+                        color: Color(0xFF9E9E9E),
                         fontSize: 13,
                       ),
                       maxLines: 1,
@@ -293,12 +358,14 @@ class _SongTile extends StatelessWidget {
               // Duration
               if (song.durationSec != null)
                 Padding(
-                  padding: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.only(left: 12),
                   child: Text(
                     _formatDuration(Duration(seconds: song.durationSec!)),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 12,
+                    style: const TextStyle(
+                      color: Color(0xFF9E9E9E),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      fontFeatures: [FontFeature.tabularFigures()],
                     ),
                   ),
                 ),
@@ -310,8 +377,8 @@ class _SongTile extends StatelessWidget {
   }
 
   static final _placeholder = Container(
-    width: 52,
-    height: 52,
+    width: 56,
+    height: 56,
     color: const Color(0xFF14141F),
     child: const Icon(Icons.music_note, color: Colors.white24, size: 24),
   );
