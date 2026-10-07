@@ -259,15 +259,15 @@ class _TrendingSongTile extends StatelessWidget {
                             errorWidget: (_, __, ___) => Container(
                               width: 56,
                               height: 56,
-                            color: const Color(0xFF1E1E2E),
-                            child: const Icon(
-                              Icons.music_note,
-                              color: Colors.white24,
-                              size: 24,
+                              color: const Color(0xFF1E1E2E),
+                              child: const Icon(
+                                Icons.music_note,
+                                color: Colors.white24,
+                                size: 24,
+                              ),
                             ),
-                          ),
-                        )
-                      : Container(
+                          )
+                        : Container(
                           width: 56,
                           height: 56,
                           color: const Color(0xFF1E1E2E),
