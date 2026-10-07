@@ -279,7 +279,7 @@ class _TrendingSection extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -287,27 +287,36 @@ class _TrendingSection extends ConsumerWidget {
                     'Trending Now',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: 24,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
+                      height: 1.2,
                     ),
                   ),
-                  Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 24,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.local_fire_department_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ],
               ),
             ),
             SizedBox(
-              height: 180,
+              height: 190,
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 itemCount: songs.length,
                 itemBuilder: (ctx, i) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.only(right: 12),
                   child: _TrendingSongCard(
                     song: songs[i],
                     rank: i + 1,
@@ -347,11 +356,18 @@ class _TrendingSongCard extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: 140,
+          width: 145,
           decoration: BoxDecoration(
             color: const Color(0xFF14141F),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
+            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,12 +658,9 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).value;
-    debugPrint('[home] Recently Played - user signed in: ${user != null}');
-    debugPrint('[home] Recently Played - user uid: ${user?.uid ?? "none"}');
 
     if (user == null) {
-      debugPrint('[home] Recently Played - no user, returning empty');
-      return const SizedBox.shrink();
+        return const SizedBox.shrink();
     }
 
     final historyAsync = ref.watch(userHistoryProvider);
@@ -656,10 +669,8 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
       opacity: _fadeAnimation,
       child: historyAsync.when(
         data: (songs) {
-          debugPrint('[home] Recently Played loaded: ${songs.length} songs');
-          if (songs.isEmpty) {
-            debugPrint('[home] No history found - showing empty state');
-            return Padding(
+                if (songs.isEmpty) {
+                    return Padding(
               padding: const EdgeInsets.all(16),
               child: _EmptyState(
                 icon: Icons.history,
@@ -704,9 +715,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
         },
         loading: () => _SkeletonLoader(title: 'Recently Played'),
         error: (error, stackTrace) {
-          debugPrint('Recently Played error: $error');
-          debugPrint('Stack trace: $stackTrace');
-          return Padding(
+                      return Padding(
             padding: const EdgeInsets.all(16),
             child: _ErrorState(
               title: 'Recently Played',
@@ -735,26 +744,20 @@ class _MyPlaylistsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authStateProvider).value;
-    debugPrint('[home] My Playlists - user signed in: ${user != null}');
-    debugPrint('[home] My Playlists - user uid: ${user?.uid ?? "none"}');
 
     if (user == null) {
-      debugPrint('[home] My Playlists - no user, returning empty');
-      return const SizedBox.shrink();
+        return const SizedBox.shrink();
     }
 
     final playlistsAsync = ref.watch(userPlaylistsProvider);
 
     return playlistsAsync.when(
       data: (playlists) {
-        debugPrint('[home] My Playlists loaded: ${playlists.length} playlists');
-        for (final p in playlists) {
-          debugPrint('[home]   - ${p.name} (${p.songs.length} songs)');
-        }
+            for (final p in playlists) {
+              }
 
         if (playlists.isEmpty) {
-          debugPrint('[home] No playlists found - showing empty state');
-          return _EmptyState(
+                return _EmptyState(
             icon: Icons.queue_music,
             title: 'No playlists yet',
             subtitle: 'Create your first playlist to organize your music',
@@ -828,13 +831,10 @@ class _MyPlaylistsSection extends ConsumerWidget {
         );
       },
       loading: () {
-        debugPrint('[home] My Playlists loading...');
-        return _SkeletonLoader(title: 'My Playlists');
+            return _SkeletonLoader(title: 'My Playlists');
       },
       error: (error, stackTrace) {
-        debugPrint('[home] My Playlists error: $error');
-        debugPrint('[home] Stack trace: $stackTrace');
-        return _ErrorState(
+                return _ErrorState(
           title: 'My Playlists',
           message: 'Could not load playlists',
           onRetry: () => ref.invalidate(
@@ -1734,3 +1734,4 @@ class _MiniBar extends ConsumerWidget {
     );
   }
 }
+

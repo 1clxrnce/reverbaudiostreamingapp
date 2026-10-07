@@ -218,7 +218,6 @@ class YtMusicApi {
     } catch (e) {
       // if anything goes wrong (no internet, YouTube error, etc.)
       // log it and return empty instead of crashing the app
-      debugPrint('[ytmusic] search error: $e');
       return const [];
     }
   }
@@ -242,7 +241,6 @@ class YtMusicApi {
 
       return _parseArtists(res.data!);
     } catch (e) {
-      debugPrint('[ytmusic] artist search error: $e');
       return const [];
     }
   }
@@ -266,7 +264,6 @@ class YtMusicApi {
 
       return _parseArtistPageSongs(res.data!);
     } catch (e) {
-      debugPrint('[ytmusic] get artist songs error: $e');
       return const [];
     }
   }
@@ -275,7 +272,6 @@ class YtMusicApi {
   // Returns the top 5 trending songs
   Future<List<Song>> getTrendingSongs() async {
     try {
-      debugPrint('[ytmusic] Fetching trending songs...');
       // Use the home/browse endpoint to get trending content
       // FEmusic_home gives us the YouTube Music home page which includes trending
       const browseId = 'FEmusic_home';
@@ -287,17 +283,15 @@ class YtMusicApi {
       );
 
       if (res.data == null) {
-        debugPrint('[ytmusic] No data received from API');
-        return const [];
+          return const [];
       }
 
       // Parse trending songs and limit to top 10
       final songs = _parseTrendingSongs(res.data!);
-      debugPrint('[ytmusic] Parsed ${songs.length} trending songs');
       return songs.take(10).toList();
     } catch (e) {
-      debugPrint('[ytmusic] get trending songs error: $e');
       return const [];
     }
   }
 }
+

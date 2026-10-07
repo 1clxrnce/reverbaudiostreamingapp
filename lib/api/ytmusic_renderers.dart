@@ -386,13 +386,11 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
   final out = <Song>[];
 
   try {
-    debugPrint('[ytmusic] Starting to parse trending songs...');
     // Navigate to browse content
     final tabs = _list(
       _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
     );
 
-    debugPrint('[ytmusic] Found ${tabs.length} tabs');
 
     for (final tab in tabs) {
       final tabRenderer = _asMap(tab)['tabRenderer'];
@@ -403,8 +401,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
         _dig(tabRenderer, ['content', 'sectionListRenderer', 'contents']),
       );
 
-      debugPrint('[ytmusic] Found ${sections.length} sections in tab');
-
+  
       // Search through all sections for songs
       for (final section in sections) {
         final sectionMap = _asMap(section);
@@ -429,8 +426,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
             if (item != null) {
               final song = _parseItem(_asMap(item));
               if (song != null) {
-                debugPrint('[ytmusic] Found song: ${song.title}');
-                out.add(song);
+                            out.add(song);
                 if (out.length >= 10) break;
               }
             } else {
@@ -439,8 +435,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
               if (item != null) {
                 final song = _parseTwoRowItem(_asMap(item));
                 if (song != null) {
-                  debugPrint('[ytmusic] Found song (two-row): ${song.title}');
-                  out.add(song);
+                                out.add(song);
                   if (out.length >= 10) break;
                 }
               }
@@ -456,9 +451,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
       if (out.isNotEmpty) break;
     }
 
-    debugPrint('[ytmusic] Total songs parsed: ${out.length}');
   } catch (e) {
-    debugPrint('[ytmusic] parse trending songs error: $e');
   }
 
   return out;
@@ -522,7 +515,7 @@ Song? _parseTwoRowItem(Map<String, dynamic> m) {
       durationSec: null, // Two-row items usually don't show duration
     );
   } catch (e) {
-    debugPrint('[ytmusic] parse two-row item error: $e');
     return null;
   }
 }
+
