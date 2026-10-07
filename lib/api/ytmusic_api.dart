@@ -29,6 +29,19 @@ const _kVersion = '1.20260101.01.00';
 // This is a base64-encoded value YouTube understands — you don't need to decode it
 const _kSongsParam = 'EgWKAQIIAWoKEAoQAxAEEAkQBQ%3D%3D';
 
+// Filter code for artists only
+const _kArtistsParam = 'EgWKAQIgAWoKEAoQAxAEEAkQBQ%3D%3D';
+
+// No filter - returns all types (songs, artists, albums, playlists)
+// const _kNoFilterParam = null; // We'll just omit params for "all"
+
+// ── Search Type Enum ──────────────────────────────────────────────────────────
+enum SearchType {
+  all, // Search everything (songs, artists, albums)
+  songs, // Songs only
+  artists, // Artists only
+}
+
 // ── Song model ────────────────────────────────────────────────────────────────
 // This is the blueprint for what a "song" looks like in this app.
 // Every search result gets turned into one of these.
@@ -39,6 +52,8 @@ class Song {
     required this.artist, // required — even if it's empty string
     this.artwork, // optional — some results have no thumbnail
     this.durationSec, // optional — some results have no duration info
+    this.album, // optional — album name
+    this.year, // optional — release year
   });
 
   // YouTube video ID — the short code in every YouTube URL e.g. "dQw4w9WgXcQ"
@@ -59,6 +74,14 @@ class Song {
   // nullable — not every result includes duration
   final int? durationSec;
 
+  // Album name e.g. "Scorpion"
+  // nullable — not every result includes album info
+  final String? album;
+
+  // Release year e.g. "2018"
+  // nullable — not every result includes year info
+  final String? year;
+
   // Convenience getter — converts raw seconds into a Dart Duration object
   // Returns null if we don't have duration info
   Duration? get duration =>
@@ -76,6 +99,8 @@ class Song {
     'artist': artist,
     'artwork': artwork,
     'durationSec': durationSec,
+    'album': album,
+    'year': year,
   };
 
   // Create Song from Firestore Map
@@ -85,10 +110,30 @@ class Song {
     artist: map['artist'] as String,
     artwork: map['artwork'] as String?,
     durationSec: map['durationSec'] as int?,
+    album: map['album'] as String?,
+    year: map['year'] as String?,
   );
 
   @override
   String toString() => 'Song($id, "$title")'; // useful for debug logs
+}
+
+// ── Artist model ──────────────────────────────────────────────────────────────
+class Artist {
+  const Artist({
+    required this.id,
+    required this.name,
+    this.artwork,
+    this.subscriberCount,
+  });
+
+  final String id; // Artist/channel ID
+  final String name; // Artist name
+  final String? artwork; // Artist avatar/thumbnail
+  final String? subscriberCount; // Subscriber count (e.g. "1.2M subscribers")
+
+  @override
+  String toString() => 'Artist($id, "$name")';
 }
 
 // ── YtMusicApi ────────────────────────────────────────────────────────────────
@@ -131,9 +176,26 @@ class YtMusicApi {
 
   // The main search function — called when the user types something and hits search
   // Returns a list of Song objects, or an empty list if something goes wrong
-  Future<List<Song>> searchSongs(String query) async {
+  // Now supports searching for different types (songs, artists, or both)
+  Future<List<Song>> searchSongs(
+    String query, {
+    SearchType type = SearchType.songs,
+  }) async {
     // don't bother hitting YouTube if the query is blank or just spaces
     if (query.trim().isEmpty) return const [];
+
+    // Determine which filter to use based on search type
+    String? params;
+    switch (type) {
+      case SearchType.songs:
+        params = _kSongsParam;
+        break;
+      case SearchType.artists:
+        return const []; // Artists are handled separately
+      case SearchType.all:
+        params = null; // No filter = all results
+        break;
+    }
 
     try {
       // POST request to YouTube Music's search endpoint
@@ -142,8 +204,7 @@ class YtMusicApi {
         data: {
           ..._ctx, // spread the context block in (like copy-pasting it here)
           'query': query, // the user's search text
-          'params':
-              _kSongsParam, // the filter that restricts results to songs only
+          if (params != null) 'params': params, // optional filter
         },
         options: _opts, // the HTTP headers defined above
       );
@@ -158,6 +219,84 @@ class YtMusicApi {
       // if anything goes wrong (no internet, YouTube error, etc.)
       // log it and return empty instead of crashing the app
       debugPrint('[ytmusic] search error: $e');
+      return const [];
+    }
+  }
+
+  // Search for artists
+  Future<List<Artist>> searchArtists(String query) async {
+    if (query.trim().isEmpty) return const [];
+
+    try {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '$_kBase/search?prettyPrint=false',
+        data: {
+          ..._ctx,
+          'query': query,
+          'params': _kArtistsParam, // Artists filter
+        },
+        options: _opts,
+      );
+
+      if (res.data == null) return const [];
+
+      return _parseArtists(res.data!);
+    } catch (e) {
+      debugPrint('[ytmusic] artist search error: $e');
+      return const [];
+    }
+  }
+
+  // Get all songs by an artist (using their channel/artist ID)
+  Future<List<Song>> getArtistSongs(String artistId) async {
+    if (artistId.trim().isEmpty) return const [];
+
+    try {
+      // Browse endpoint gets artist page content
+      final res = await _dio.post<Map<String, dynamic>>(
+        '$_kBase/browse?prettyPrint=false',
+        data: {
+          ..._ctx,
+          'browseId': artistId, // Artist channel ID
+        },
+        options: _opts,
+      );
+
+      if (res.data == null) return const [];
+
+      return _parseArtistPageSongs(res.data!);
+    } catch (e) {
+      debugPrint('[ytmusic] get artist songs error: $e');
+      return const [];
+    }
+  }
+
+  // Get top trending songs from YouTube Music charts
+  // Returns the top 5 trending songs
+  Future<List<Song>> getTrendingSongs() async {
+    try {
+      debugPrint('[ytmusic] Fetching trending songs...');
+      // Use the home/browse endpoint to get trending content
+      // FEmusic_home gives us the YouTube Music home page which includes trending
+      const browseId = 'FEmusic_home';
+
+      final res = await _dio.post<Map<String, dynamic>>(
+        '$_kBase/browse?prettyPrint=false',
+        data: {..._ctx, 'browseId': browseId},
+        options: _opts,
+      );
+
+      if (res.data == null) {
+        debugPrint('[ytmusic] No data received from API');
+        return const [];
+      }
+
+      // Parse trending songs and limit to top 5
+      final songs = _parseTrendingSongs(res.data!);
+      debugPrint('[ytmusic] Parsed ${songs.length} trending songs');
+      return songs.take(5).toList();
+    } catch (e) {
+      debugPrint('[ytmusic] get trending songs error: $e');
       return const [];
     }
   }

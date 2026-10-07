@@ -380,10 +380,13 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
   final out = <Song>[];
 
   try {
+    debugPrint('[ytmusic] Starting to parse trending songs...');
     // Navigate to browse content
     final tabs = _list(
       _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
     );
+
+    debugPrint('[ytmusic] Found ${tabs.length} tabs');
 
     for (final tab in tabs) {
       final tabRenderer = _asMap(tab)['tabRenderer'];
@@ -393,6 +396,8 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
       final sections = _list(
         _dig(tabRenderer, ['content', 'sectionListRenderer', 'contents']),
       );
+
+      debugPrint('[ytmusic] Found ${sections.length} sections in tab');
 
       // Search through all sections for songs
       for (final section in sections) {
@@ -405,6 +410,9 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
 
         if (shelf != null) {
           final shelfMap = _asMap(shelf);
+          debugPrint(
+            '[ytmusic] Processing shelf with ${_list(shelfMap['contents']).length} items',
+          );
 
           // Parse songs from this shelf
           for (final raw in _list(shelfMap['contents'])) {
@@ -415,6 +423,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
             if (item != null) {
               final song = _parseItem(_asMap(item));
               if (song != null) {
+                debugPrint('[ytmusic] Found song: ${song.title}');
                 out.add(song);
                 if (out.length >= 10) break;
               }
@@ -424,6 +433,7 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
               if (item != null) {
                 final song = _parseTwoRowItem(_asMap(item));
                 if (song != null) {
+                  debugPrint('[ytmusic] Found song (two-row): ${song.title}');
                   out.add(song);
                   if (out.length >= 10) break;
                 }
@@ -439,6 +449,8 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
       // If we have songs, stop searching tabs
       if (out.isNotEmpty) break;
     }
+
+    debugPrint('[ytmusic] Total songs parsed: ${out.length}');
   } catch (e) {
     debugPrint('[ytmusic] parse trending songs error: $e');
   }
