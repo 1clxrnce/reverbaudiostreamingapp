@@ -140,7 +140,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 0),
       child: Row(
         children: [
           IconButton(
@@ -153,7 +153,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               child: const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: Colors.white,
-                size: 24,
+                size: 26,
               ),
             ),
             onPressed: () {
@@ -165,10 +165,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           Text(
             'Now Playing',
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 16,
+              color: Colors.white.withOpacity(0.95),
+              fontSize: 17,
               fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
             ),
           ),
           const Spacer(),
@@ -190,21 +190,22 @@ class _Body extends StatelessWidget {
     return ValueListenableBuilder<Song?>(
       valueListenable: h.current,
       builder: (_, song, __) => SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: Column(
             children: [
-              const SizedBox(height: 16),
-              _buildArtwork(song),
-              const SizedBox(height: 32),
-              _buildSongInfo(context, song),
-              const SizedBox(height: 32),
-              _SeekBar(h: h),
-              const SizedBox(height: 24),
-              _Controls(h: h),
               const SizedBox(height: 20),
+              _buildArtwork(song),
+              const SizedBox(height: 36),
+              _buildSongInfo(context, song),
+              const SizedBox(height: 36),
+              _SeekBar(h: h),
+              const SizedBox(height: 28),
+              _Controls(h: h),
+              const SizedBox(height: 24),
               _VolumeBar(h: h),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -218,27 +219,23 @@ class _Body extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 320),
+          constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
           child: AspectRatio(
             aspectRatio: 1,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  0,
-                ), // Sharp edges - no rounding
+                borderRadius: BorderRadius.circular(0),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
-                    blurRadius: 50,
-                    spreadRadius: 5,
-                    offset: const Offset(0, 25),
+                    color: Colors.black.withOpacity(0.6),
+                    blurRadius: 60,
+                    spreadRadius: 8,
+                    offset: const Offset(0, 28),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                  0,
-                ), // Sharp edges - no rounding
+                borderRadius: BorderRadius.circular(0),
                 child: song?.artwork != null
                     ? CachedNetworkImage(
                         imageUrl: song!.artwork!,
@@ -264,8 +261,8 @@ class _Body extends StatelessWidget {
           song?.title ?? 'No track playing',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
             height: 1.2,
             letterSpacing: -0.5,
           ),
@@ -273,11 +270,11 @@ class _Body extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           song == null || song.artist.isEmpty ? 'Unknown artist' : song.artist,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+          style: const TextStyle(
+            color: Color(0xFF9E9E9E),
             fontSize: 16,
             fontWeight: FontWeight.w500,
             height: 1.3,
@@ -286,16 +283,16 @@ class _Body extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         if (song != null)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               FavoriteButton(song: song, size: 28, color: Colors.white),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               IconButton(
                 icon: Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -303,7 +300,7 @@ class _Body extends StatelessWidget {
                   child: const Icon(
                     Icons.more_horiz_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: 22,
                   ),
                 ),
                 onPressed: () {
@@ -833,9 +830,9 @@ class _Body extends StatelessWidget {
   }
 
   static final _artPlaceholder = Container(
-    decoration: BoxDecoration(
-      color: const Color(0xFF14141F),
-      borderRadius: BorderRadius.circular(0), // Sharp edges - no rounding
+    decoration: const BoxDecoration(
+      color: Color(0xFF14141F),
+      borderRadius: BorderRadius.zero,
     ),
     child: const Center(
       child: Icon(Icons.music_note_rounded, color: Colors.white24, size: 100),
@@ -871,18 +868,18 @@ class _SeekBar extends StatelessWidget {
             children: [
               SliderTheme(
                 data: SliderThemeData(
-                  trackHeight: 5,
+                  trackHeight: 5.5,
                   thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 8,
-                    elevation: 2,
+                    enabledThumbRadius: 9,
+                    elevation: 3,
                   ),
                   overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 20,
+                    overlayRadius: 22,
                   ),
                   activeTrackColor: Colors.white,
-                  inactiveTrackColor: Colors.white.withOpacity(0.15),
+                  inactiveTrackColor: Colors.white.withOpacity(0.18),
                   thumbColor: Colors.white,
-                  overlayColor: Colors.white.withOpacity(0.15),
+                  overlayColor: Colors.white.withOpacity(0.18),
                 ),
                 child: Slider(
                   value: val,
@@ -897,26 +894,26 @@ class _SeekBar extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       _fmt(pos),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                      style: const TextStyle(
+                        color: Color(0xFF9E9E9E),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),
                     Text(
                       _fmt(dur),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                      style: const TextStyle(
+                        color: Color(0xFF9E9E9E),
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontFeatures: [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
@@ -945,13 +942,13 @@ class _Controls extends StatelessWidget {
         children: [
           _ControlButton(
             icon: Icons.skip_previous_rounded,
-            size: 40,
+            size: 42,
             onPressed: () {
               HapticFeedback.mediumImpact();
               h.previous();
             },
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: 36),
           _PlayPauseButton(
             playing: playing,
             onTap: () {
@@ -959,10 +956,10 @@ class _Controls extends StatelessWidget {
               playing ? h.pause() : h.resume();
             },
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: 36),
           _ControlButton(
             icon: Icons.skip_next_rounded,
-            size: 40,
+            size: 42,
             onPressed: () {
               HapticFeedback.mediumImpact();
               h.next();
@@ -1026,10 +1023,17 @@ class _ControlButtonState extends State<_ControlButton>
       child: GestureDetector(
         onTap: _handleTap,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withOpacity(0.12),
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Icon(widget.icon, color: Colors.white, size: widget.size),
         ),
@@ -1085,30 +1089,30 @@ class _PlayPauseButtonState extends State<_PlayPauseButton>
       child: ScaleTransition(
         scale: _scale,
         child: Container(
-          width: 76,
-          height: 76,
+          width: 80,
+          height: 80,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 30,
-                spreadRadius: 2,
-                offset: const Offset(0, 12),
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 35,
+                spreadRadius: 3,
+                offset: const Offset(0, 14),
               ),
               BoxShadow(
-                color: Colors.white.withOpacity(0.1),
-                blurRadius: 20,
+                color: Colors.white.withOpacity(0.15),
+                blurRadius: 22,
                 spreadRadius: -5,
-                offset: const Offset(0, -5),
+                offset: const Offset(0, -6),
               ),
             ],
           ),
           child: Icon(
             widget.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
             color: Colors.black,
-            size: 42,
+            size: 44,
           ),
         ),
       ),
@@ -1127,28 +1131,28 @@ class _VolumeBar extends StatelessWidget {
     return ValueListenableBuilder<double>(
       valueListenable: h.volume,
       builder: (_, vol, __) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
             Icon(
               vol == 0 ? Icons.volume_off_rounded : Icons.volume_down_rounded,
-              color: Colors.white.withOpacity(0.5),
-              size: 22,
+              color: Colors.white.withOpacity(0.6),
+              size: 24,
             ),
             Expanded(
               child: SliderTheme(
                 data: SliderThemeData(
-                  trackHeight: 4,
+                  trackHeight: 4.5,
                   thumbShape: const RoundSliderThumbShape(
-                    enabledThumbRadius: 6,
+                    enabledThumbRadius: 7,
                   ),
                   overlayShape: const RoundSliderOverlayShape(
-                    overlayRadius: 14,
+                    overlayRadius: 16,
                   ),
-                  activeTrackColor: Colors.white.withOpacity(0.8),
-                  inactiveTrackColor: Colors.white.withOpacity(0.15),
+                  activeTrackColor: Colors.white.withOpacity(0.85),
+                  inactiveTrackColor: Colors.white.withOpacity(0.18),
                   thumbColor: Colors.white,
-                  overlayColor: Colors.white.withOpacity(0.15),
+                  overlayColor: Colors.white.withOpacity(0.18),
                 ),
                 child: Slider(
                   value: vol,
@@ -1163,8 +1167,8 @@ class _VolumeBar extends StatelessWidget {
             ),
             Icon(
               Icons.volume_up_rounded,
-              color: Colors.white.withOpacity(0.5),
-              size: 22,
+              color: Colors.white.withOpacity(0.6),
+              size: 24,
             ),
           ],
         ),
