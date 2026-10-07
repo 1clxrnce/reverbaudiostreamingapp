@@ -272,7 +272,7 @@ class YtMusicApi {
   // Returns the top 5 trending songs
   Future<List<Song>> getTrendingSongs() async {
     try {
-      debugPrint('[API] Fetching trending songs...');
+
       // Use the home/browse endpoint to get trending content
       // FEmusic_home gives us the YouTube Music home page which includes trending
       const browseId = 'FEmusic_home';
@@ -284,16 +284,16 @@ class YtMusicApi {
       );
 
       if (res.data == null) {
-        debugPrint('[API] Trending response data is null');
+
         return const [];
       }
 
       // Parse trending songs and limit to top 10
       final songs = _parseTrendingSongs(res.data!);
-      debugPrint('[API] Parsed ${songs.length} trending songs');
+
       return songs.take(10).toList();
     } catch (e) {
-      debugPrint('[API] Error fetching trending songs: $e');
+
       return const [];
     }
   }

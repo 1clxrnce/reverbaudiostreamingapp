@@ -74,12 +74,6 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
     final isFavoriteAsync = ref.read(isFavoriteProvider(widget.song.id));
     final currentState = _localState ?? isFavoriteAsync.value ?? false;
 
-    debugPrint(
-      '[FavoriteButton] Toggle - User: ${user.uid}, Song: ${widget.song.title}',
-    );
-    debugPrint(
-      '[FavoriteButton] Current state: $currentState -> ${!currentState}',
-    );
 
     // Animate
     _animController.forward().then((_) => _animController.reverse());
@@ -96,8 +90,6 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
           .read(firestoreServiceProvider)
           .toggleFavorite(user.uid, widget.song);
 
-      debugPrint('[FavoriteButton] ✅ Success!');
-
       if (mounted) {
         setState(() {
           _localState = null; // Clear optimistic state
@@ -107,7 +99,6 @@ class _FavoriteButtonState extends ConsumerState<FavoriteButton>
         ref.invalidate(isFavoriteProvider(widget.song.id));
       }
     } catch (e) {
-      debugPrint('[FavoriteButton] ❌ Error: $e');
 
       if (mounted) {
         // Revert on error

@@ -819,7 +819,7 @@ class _CoverOptionsSheet extends ConsumerWidget {
         }
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+
     }
   }
 
@@ -832,7 +832,7 @@ class _CoverOptionsSheet extends ConsumerWidget {
             .updatePlaylistCover(user.uid, playlist.id, url);
       }
     } catch (e) {
-      debugPrint('Error updating cover: $e');
+
     }
   }
 
@@ -845,7 +845,7 @@ class _CoverOptionsSheet extends ConsumerWidget {
             .updatePlaylistCover(user.uid, playlist.id, null);
       }
     } catch (e) {
-      debugPrint('Error removing cover: $e');
+
     }
   }
 }

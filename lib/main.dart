@@ -38,12 +38,12 @@ Future<void> main() async {
       try {
         await authService.signInAnonymously();
       } catch (e) {
-        debugPrint('[main] Failed to sign in anonymously: $e');
+
       }
     }
   } catch (e) {
-    debugPrint('[main] Firebase initialization failed: $e');
-    debugPrint('[main] Continuing without Firebase features');
+
+
   }
 
   // Style the Android system UI (status bar at the top, nav bar at the bottom)

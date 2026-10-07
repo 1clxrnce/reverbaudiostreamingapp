@@ -86,7 +86,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         });
       }
     } catch (e) {
-      debugPrint('[PlayerScreen] Color extraction failed: $e');
+
     }
   }
 
@@ -571,9 +571,7 @@ class _Body extends StatelessWidget {
                                             );
                                           }
                                         } catch (e) {
-                                          debugPrint(
-                                            'Error adding to playlist: $e',
-                                          );
+
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(
                                               context,
@@ -696,7 +694,7 @@ class _Body extends StatelessWidget {
                       );
                     }
                   } catch (e) {
-                    debugPrint('Error creating playlist: $e');
+
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

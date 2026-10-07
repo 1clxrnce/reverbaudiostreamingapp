@@ -186,14 +186,11 @@ class FirestoreService {
   // Record a play event
   Future<void> recordPlay(String userId, Song song) async {
     try {
-      debugPrint('[firestore] ═══════════════════════════════════════');
-      debugPrint('[firestore] RECORDING PLAY TO DATABASE');
-      debugPrint('[firestore] User ID: $userId');
-      debugPrint('[firestore] Song: ${song.title}');
-      debugPrint('[firestore] Song ID: ${song.id}');
-      debugPrint(
-        '[firestore] Collection path: users/$userId/history/${song.id}',
-      );
+
+
+
+
+
 
       await _db
           .collection('users')
@@ -206,12 +203,11 @@ class FirestoreService {
             'playCount': FieldValue.increment(1),
           }, SetOptions(merge: true));
 
-      debugPrint('[firestore] ✓ WRITE SUCCESSFUL');
-      debugPrint('[firestore] ═══════════════════════════════════════');
+
     } catch (e, stackTrace) {
-      debugPrint('[firestore] ✗ WRITE FAILED: $e');
-      debugPrint('[firestore] Stack trace: $stackTrace');
-      debugPrint('[firestore] ═══════════════════════════════════════');
+
+
+
       rethrow;
     }
   }

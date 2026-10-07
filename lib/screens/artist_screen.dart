@@ -228,7 +228,30 @@ class ArtistScreen extends ConsumerWidget {
             },
             loading: () => const SliverFillRemaining(
               child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 48,
+                        height: 48,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      Text(
+                        'Loading songs...',
+                        style: TextStyle(
+                          color: Color(0xFF9E9E9E),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             error: (error, _) => SliverFillRemaining(
@@ -239,13 +262,13 @@ class ArtistScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
-                        Icons.error_outline,
+                        Icons.cloud_off_rounded,
                         size: 64,
                         color: Colors.white54,
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Failed to load songs',
+                        'Unable to load songs',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -254,15 +277,32 @@ class ArtistScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        error.toString(),
-                        style: const TextStyle(
+                      const Text(
+                        'Please check your internet connection',
+                        style: TextStyle(
                           color: Color(0xFF9E9E9E),
                           fontSize: 13,
                         ),
                         textAlign: TextAlign.center,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 28),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          ref.invalidate(artistSongsProvider(artist.id));
+                        },
+                        icon: const Icon(Icons.refresh, size: 20),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ],
                   ),

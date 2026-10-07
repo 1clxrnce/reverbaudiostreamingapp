@@ -76,7 +76,7 @@ class YtMusicChannel {
     try {
       // send "prewarm" to Kotlin — tells it to start loading the WebView now
       await _ch.invokeMethod<void>('prewarm');
-      debugPrint('[ytmusic] prewarm done');
+
     } catch (e) {
       // if pre-warming fails, it's not fatal — first song will just load a bit slower
       debugPrint('[ytmusic] prewarm failed (non-fatal): $e');
@@ -106,11 +106,11 @@ class YtMusicChannel {
     } on PlatformException catch (e) {
       // PlatformException is what Kotlin throws when something goes wrong on the native side
       // e.g. network error, YouTube API error, WebView crash
-      debugPrint('[ytmusic] resolve failed $videoId: ${e.message}');
+
       return null;
     } catch (e) {
       // catch anything else unexpected
-      debugPrint('[ytmusic] resolve error $videoId: $e');
+
       return null;
     }
   }

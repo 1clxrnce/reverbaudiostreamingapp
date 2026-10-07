@@ -332,10 +332,7 @@ class _TrendingSection extends ConsumerWidget {
         padding: EdgeInsets.symmetric(vertical: 40),
         child: Center(child: CircularProgressIndicator(color: Colors.white)),
       ),
-      error: (e, __) {
-        debugPrint('[Home] Trending error: $e');
-        return const SizedBox.shrink();
-      },
+      error: (e, __) => const SizedBox.shrink(), // Silently hide on error
     );
   }
 }

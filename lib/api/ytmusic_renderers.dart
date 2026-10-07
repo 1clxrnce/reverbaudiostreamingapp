@@ -386,12 +386,11 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
   final out = <Song>[];
 
   try {
-    debugPrint('[Parser] Starting to parse trending songs...');
+
     // Navigate to browse content
     final tabs = _list(
       _dig(body, ['contents', 'singleColumnBrowseResultsRenderer', 'tabs']),
     );
-    debugPrint('[Parser] Found ${tabs.length} tabs');
 
     for (final tab in tabs) {
       final tabRenderer = _asMap(tab)['tabRenderer'];
@@ -451,10 +450,9 @@ List<Song> _parseTrendingSongs(Map<String, dynamic> body) {
       if (out.isNotEmpty) break;
     }
   } catch (e) {
-    debugPrint('[Parser] Error parsing trending songs: $e');
+
   }
 
-  debugPrint('[Parser] Finished parsing, found ${out.length} songs');
   return out;
 }
 

@@ -152,11 +152,9 @@ class AudioHandler {
       final song = _byId[id];
       if (song == null) {
         // shouldn't happen, but log it if it does
-        debugPrint('[audio] hook: no song for id "$id"');
+
         return;
       }
-
-      debugPrint('[audio] resolving ${song.id} "${song.title}"');
 
       // ── Step 3: call Kotlin to get the real stream URL ──
       // This is the async call to the hidden WebView that generates the PO Token
@@ -164,7 +162,7 @@ class AudioHandler {
       final yt = await YtMusicChannel.instance.resolve(song.id);
       if (yt == null) {
         // Kotlin failed to resolve — log it, mpv will handle the error
-        debugPrint('[audio] resolve returned null for ${song.id}');
+
         return;
       }
 
@@ -181,7 +179,7 @@ class AudioHandler {
       debugPrint('[audio] resolved → ${yt.url.substring(0, 60)}…');
     } catch (e, st) {
       // log any unexpected errors — mpv will still get continueHook in the finally block
-      debugPrint('[audio] hook error: $e\n$st');
+
     } finally {
       // ALWAYS release the hook so mpv doesn't stall forever waiting for us
       // 'finally' runs whether the try block succeeded or threw an error
@@ -207,7 +205,7 @@ class AudioHandler {
       // write the formatted headers string to mpv's http-header-fields property
       await _player.setRawProperty('http-header-fields', value);
     } catch (e) {
-      debugPrint('[audio] http-header-fields error: $e');
+
     }
   }
 
@@ -242,19 +240,19 @@ class AudioHandler {
   Future<void> _recordPlayHistory(Song song) async {
     try {
       final user = _auth.currentUser;
-      debugPrint('[audio] attempting to record play for: ${song.title}');
+
       debugPrint('[audio] user signed in: ${user != null} (uid: ${user?.uid})');
 
       if (user == null) {
-        debugPrint('[audio] skipping recording - no user signed in');
+
         return; // not signed in, skip
       }
 
       await _firestore.recordPlay(user.uid, song);
-      debugPrint('[audio] ✓ successfully recorded play: ${song.title}');
+
     } catch (e, stackTrace) {
-      debugPrint('[audio] ✗ failed to record play: $e');
-      debugPrint('[audio] stack trace: $stackTrace');
+
+
     }
   }
 

@@ -63,8 +63,29 @@ class DiscoverScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: Colors.white)),
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.all(40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 3,
+                  ),
+                ),
+                SizedBox(height: 24),
+                Text(
+                  'Loading trending songs...',
+                  style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ),
         error: (e, _) => Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -72,13 +93,13 @@ class DiscoverScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(
-                  Icons.error_outline,
+                  Icons.cloud_off_rounded,
                   size: 64,
                   color: Colors.white54,
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'Failed to load trending songs',
+                  'Unable to load trending songs',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -87,18 +108,18 @@ class DiscoverScreen extends ConsumerWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  e.toString(),
-                  style: const TextStyle(color: Colors.white54, fontSize: 13),
+                const Text(
+                  'Please check your internet connection',
+                  style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
                   textAlign: TextAlign.center,
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 28),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: () {
                     ref.invalidate(trendingSongsProvider);
                   },
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: const Text('Retry'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -109,10 +130,6 @@ class DiscoverScreen extends ConsumerWidget {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                  child: const Text(
-                    'Retry',
-                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ],

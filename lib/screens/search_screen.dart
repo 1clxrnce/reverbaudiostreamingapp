@@ -326,12 +326,79 @@ class _Results extends ConsumerWidget {
     final state = ref.watch(searchProvider(query));
     return state.when(
       loading: () => const Center(
-        child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
+                ),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Searching...',
+                style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 15),
+              ),
+            ],
+          ),
+        ),
       ),
       error: (e, _) => Center(
-        child: Text(
-          'Error: $e',
-          style: const TextStyle(color: Colors.redAccent),
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.cloud_off_rounded,
+                size: 64,
+                color: Colors.white54,
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Unable to search',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Please check your internet connection',
+                style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // Retry by resubmitting the query
+                  if (query.isNotEmpty) {
+                    ref.invalidate(searchProvider(query));
+                  }
+                },
+                icon: const Icon(Icons.refresh, size: 20),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
       data: (songs) {
@@ -390,14 +457,59 @@ class _ArtistAndSongResults extends ConsumerWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
+            child: Padding(
+              padding: EdgeInsets.all(40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 3,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  Text(
+                    'Searching...',
+                    style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 15),
+                  ),
+                ],
+              ),
+            ),
           );
         }
         if (snapshot.hasError) {
           return Center(
-            child: Text(
-              'Error: ${snapshot.error}',
-              style: const TextStyle(color: Colors.redAccent),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.cloud_off_rounded,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Unable to search',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Please check your internet connection',
+                    style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           );
         }
