@@ -186,7 +186,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   decoration: InputDecoration(
                     hintText: 'Search songs, artists, albums...',
                     hintStyle: const TextStyle(
-                      color: Color(0xFF6E6E7E),
+                      color: Color(0xFF9E9E9E),
                       fontSize: 16,
                     ),
                     filled: true,
@@ -660,7 +660,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
     final user = ref.watch(authStateProvider).value;
 
     if (user == null) {
-        return const SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     final historyAsync = ref.watch(userHistoryProvider);
@@ -669,8 +669,8 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
       opacity: _fadeAnimation,
       child: historyAsync.when(
         data: (songs) {
-                if (songs.isEmpty) {
-                    return Padding(
+          if (songs.isEmpty) {
+            return Padding(
               padding: const EdgeInsets.all(16),
               child: _EmptyState(
                 icon: Icons.history,
@@ -715,7 +715,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<_RecentlyPlayedSection>
         },
         loading: () => _SkeletonLoader(title: 'Recently Played'),
         error: (error, stackTrace) {
-                      return Padding(
+          return Padding(
             padding: const EdgeInsets.all(16),
             child: _ErrorState(
               title: 'Recently Played',
@@ -746,18 +746,17 @@ class _MyPlaylistsSection extends ConsumerWidget {
     final user = ref.watch(authStateProvider).value;
 
     if (user == null) {
-        return const SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     final playlistsAsync = ref.watch(userPlaylistsProvider);
 
     return playlistsAsync.when(
       data: (playlists) {
-            for (final p in playlists) {
-              }
+        for (final p in playlists) {}
 
         if (playlists.isEmpty) {
-                return _EmptyState(
+          return _EmptyState(
             icon: Icons.queue_music,
             title: 'No playlists yet',
             subtitle: 'Create your first playlist to organize your music',
@@ -831,10 +830,10 @@ class _MyPlaylistsSection extends ConsumerWidget {
         );
       },
       loading: () {
-            return _SkeletonLoader(title: 'My Playlists');
+        return _SkeletonLoader(title: 'My Playlists');
       },
       error: (error, stackTrace) {
-                return _ErrorState(
+        return _ErrorState(
           title: 'My Playlists',
           message: 'Could not load playlists',
           onRetry: () => ref.invalidate(
@@ -898,7 +897,7 @@ class _PlaylistCard extends ConsumerWidget {
             // Song count
             Text(
               '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
-              style: const TextStyle(color: Color(0xFFB4B4C8), fontSize: 12),
+              style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 12),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1128,7 +1127,7 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF6E6E7E), size: 48),
+          Icon(icon, color: const Color(0xFF9E9E9E), size: 48),
           const SizedBox(height: 12),
           Text(
             title,
@@ -1141,7 +1140,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: const TextStyle(color: Color(0xFF6E6E7E), fontSize: 14),
+            style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1186,13 +1185,13 @@ class _ErrorState extends StatelessWidget {
             children: [
               const Icon(
                 Icons.error_outline,
-                color: Color(0xFF6E6E7E),
+                color: Color(0xFF9E9E9E),
                 size: 40,
               ),
               const SizedBox(height: 12),
               Text(
                 message,
-                style: const TextStyle(color: Color(0xFF6E6E7E), fontSize: 14),
+                style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -1306,7 +1305,7 @@ class _SongCard extends StatelessWidget {
             // Artist
             Text(
               song.artist.isEmpty ? 'Unknown' : song.artist,
-              style: const TextStyle(color: Color(0xFFB4B4C8), fontSize: 12),
+              style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 12),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1348,7 +1347,7 @@ class _WelcomeSection extends StatelessWidget {
           const SizedBox(height: 12),
           const Text(
             'Sign in to save favorites and get personalized recommendations',
-            style: TextStyle(color: Color(0xFFB4B4C8), fontSize: 15),
+            style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 15),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -1389,7 +1388,7 @@ class _SearchResults extends ConsumerWidget {
       return const Center(
         child: Text(
           'Type to search',
-          style: TextStyle(color: Color(0xFF6E6E7E)),
+          style: TextStyle(color: Color(0xFF9E9E9E)),
         ),
       );
     }
@@ -1402,7 +1401,7 @@ class _SearchResults extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, color: Color(0xFF6E6E7E), size: 48),
+            const Icon(Icons.error_outline, color: Color(0xFF9E9E9E), size: 48),
             const SizedBox(height: 16),
             Text(
               'Search failed',
@@ -1415,7 +1414,7 @@ class _SearchResults extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               e.toString(),
-              style: const TextStyle(color: Color(0xFF6E6E7E), fontSize: 13),
+              style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
               textAlign: TextAlign.center,
             ),
           ],
@@ -1427,7 +1426,7 @@ class _SearchResults extends ConsumerWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.search_off, color: Color(0xFF6E6E7E), size: 48),
+                Icon(Icons.search_off, color: Color(0xFF9E9E9E), size: 48),
                 SizedBox(height: 16),
                 Text(
                   'No results',
@@ -1440,7 +1439,7 @@ class _SearchResults extends ConsumerWidget {
                 SizedBox(height: 8),
                 Text(
                   'Try a different search term',
-                  style: TextStyle(color: Color(0xFF6E6E7E), fontSize: 13),
+                  style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13),
                 ),
               ],
             ),
@@ -1508,7 +1507,7 @@ class _Tile extends StatelessWidget {
                     Text(
                       song.artist.isEmpty ? 'Unknown artist' : song.artist,
                       style: const TextStyle(
-                        color: Color(0xFFB4B4C8),
+                        color: Color(0xFF9E9E9E),
                         fontSize: 13,
                       ),
                       maxLines: 1,
@@ -1523,7 +1522,7 @@ class _Tile extends StatelessWidget {
                   child: Text(
                     _fmt(Duration(seconds: song.durationSec!)),
                     style: const TextStyle(
-                      color: Color(0xFF6E6E7E),
+                      color: Color(0xFF9E9E9E),
                       fontSize: 12,
                     ),
                   ),
@@ -1653,7 +1652,7 @@ class _MiniBar extends ConsumerWidget {
                                 Text(
                                   song.artist.isEmpty ? 'Unknown' : song.artist,
                                   style: const TextStyle(
-                                    color: Color(0xFFB4B4C8),
+                                    color: Color(0xFF9E9E9E),
                                     fontSize: 12,
                                   ),
                                   maxLines: 1,
@@ -1734,4 +1733,3 @@ class _MiniBar extends ConsumerWidget {
     );
   }
 }
-

@@ -139,7 +139,7 @@ class _State extends ConsumerState<SearchScreen> {
                             ? 'songs'
                             : 'artists'}',
                     hintStyle: const TextStyle(
-                      color: Color(0xFF6E6E7E),
+                      color: Color(0xFF9E9E9E),
                       fontSize: 16,
                     ),
                     filled: true,
@@ -254,7 +254,7 @@ class _FilterChip extends StatelessWidget {
           border: Border.all(
             color: isSelected
                 ? Colors.white
-                : const Color(0xFF6E6E7E).withOpacity(0.4),
+                : const Color(0xFF9E9E9E).withOpacity(0.4),
             width: 1.5,
           ),
         ),
@@ -294,7 +294,7 @@ class _Results extends ConsumerWidget {
               : searchType == SearchType.songs
               ? 'songs'
               : 'artists'}',
-          style: const TextStyle(color: Color(0xFF6E6E7E)),
+          style: const TextStyle(color: Color(0xFF9E9E9E)),
         ),
       );
     }
@@ -323,7 +323,7 @@ class _Results extends ConsumerWidget {
           return const Center(
             child: Text(
               'No songs found',
-              style: TextStyle(color: Color(0xFF6E6E7E)),
+              style: TextStyle(color: Color(0xFF9E9E9E)),
             ),
           );
         }
@@ -392,7 +392,7 @@ class _ArtistAndSongResults extends ConsumerWidget {
           return const Center(
             child: Text(
               'No results found',
-              style: TextStyle(color: Color(0xFF6E6E7E)),
+              style: TextStyle(color: Color(0xFF9E9E9E)),
             ),
           );
         }
@@ -532,7 +532,7 @@ class _ArtistTile extends StatelessWidget {
                       Text(
                         artist.subscriberCount!,
                         style: const TextStyle(
-                          color: Color(0xFFB4B4C8),
+                          color: Color(0xFF9E9E9E),
                           fontSize: 13,
                         ),
                         maxLines: 1,
@@ -773,7 +773,7 @@ class _MiniBar extends ConsumerWidget {
                               Text(
                                 song.artist.isEmpty ? 'Unknown' : song.artist,
                                 style: const TextStyle(
-                                  color: Color(0xFFB4B4C8),
+                                  color: Color(0xFF9E9E9E),
                                   fontSize: 12,
                                   height: 1.2,
                                 ),
