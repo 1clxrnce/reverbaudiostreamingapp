@@ -101,11 +101,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Logo and actions
+          // Logo and actions - SMALLER COMPACT HEADER
           Row(
             children: [
               GestureDetector(
@@ -130,7 +130,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.favorite_border, color: Colors.white),
-                iconSize: 24,
+                iconSize: 22,
+                padding: const EdgeInsets.all(8),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   Navigator.pushNamed(context, '/favorites');
@@ -139,7 +140,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.library_music, color: Colors.white),
-                iconSize: 24,
+                iconSize: 22,
+                padding: const EdgeInsets.all(8),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   Navigator.pushNamed(context, '/playlists');
@@ -148,7 +150,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.person, color: Colors.white),
-                iconSize: 24,
+                iconSize: 22,
+                padding: const EdgeInsets.all(8),
                 onPressed: () {
                   HapticFeedback.lightImpact();
                   Navigator.pushNamed(context, '/profile');
@@ -157,7 +160,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           // Search bar with back button when searching
           Row(
             children: [

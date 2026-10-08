@@ -19,6 +19,7 @@ import 'screens/auth/profile_screen.dart'; // profile screen
 import 'screens/playlists_screen.dart'; // playlists screen
 import 'screens/favorites_screen.dart'; // favorites screen
 import 'screens/discover_screen.dart'; // discover/trending songs screen
+import 'screens/splash_screen.dart'; // animated splash screen
 
 // main() is the entry point — Dart runs this first when the app starts
 Future<void> main() async {
@@ -37,14 +38,9 @@ Future<void> main() async {
     if (authService.currentUser == null) {
       try {
         await authService.signInAnonymously();
-      } catch (e) {
-
-      }
+      } catch (e) {}
     }
-  } catch (e) {
-
-
-  }
+  } catch (e) {}
 
   // Style the Android system UI (status bar at the top, nav bar at the bottom)
   SystemChrome.setSystemUIOverlayStyle(
@@ -119,9 +115,10 @@ class App extends StatelessWidget {
         ),
       ),
 
-      // Start directly at home screen
-      initialRoute: '/home',
+      // Start at splash screen, then navigate to home
+      initialRoute: '/splash',
       routes: {
+        '/splash': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
         '/sign-in': (context) => const SignInScreen(),
         '/sign-up': (context) => const SignUpScreen(),

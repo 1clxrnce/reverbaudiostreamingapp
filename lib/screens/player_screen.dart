@@ -81,13 +81,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             const Color(0xFF0A0A0F);
 
         setState(() {
-          _bgColor = Color.lerp(const Color(0xFF0A0A0F), extractedColor, 0.3)!;
+          _bgColor = Color.lerp(const Color(0xFF0A0A0F), extractedColor, 0.65)!;
           _lastArtworkUrl = artworkUrl;
         });
       }
-    } catch (e) {
-
-    }
+    } catch (e) {}
   }
 
   @override
@@ -110,10 +108,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               end: Alignment.bottomRight,
               colors: [
                 _bgColor,
+                Color.lerp(_bgColor, const Color(0xFF0A0A0F), 0.25)!,
+                Color.lerp(_bgColor, const Color(0xFF0A0A0F), 0.6)!,
                 const Color(0xFF0A0A0F),
                 const Color(0xFF000000),
               ],
-              stops: const [0.0, 0.5, 1.0],
+              stops: const [0.0, 0.25, 0.5, 0.8, 1.0],
             ),
           ),
           child: Scaffold(
@@ -571,7 +571,6 @@ class _Body extends StatelessWidget {
                                             );
                                           }
                                         } catch (e) {
-
                                           if (context.mounted) {
                                             ScaffoldMessenger.of(
                                               context,
@@ -694,7 +693,6 @@ class _Body extends StatelessWidget {
                       );
                     }
                   } catch (e) {
-
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
